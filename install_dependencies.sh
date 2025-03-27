@@ -8,3 +8,5 @@ source get_pretrained_models.sh
 
 # python dependencies
 pip install opencv-python
+pip install opencv-python-headless
+pip install scipy

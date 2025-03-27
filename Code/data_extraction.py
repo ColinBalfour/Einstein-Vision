@@ -2,8 +2,11 @@ import cv2
 import os
 import re
 import glob
-import numpy
-print(numpy.version.version)
+import numpy as np
+print(np.version.version)
+
+import scipy.io
+# from scipy.io.matlab.mio5 import 
 
 def extract_frames(video_path, output_folder, sample_rate=5):
     """Extract every 5th frame from video"""
@@ -66,9 +69,39 @@ def process_scene_videos(base_folder, image_type):
                     frames = extract_frames(video_path, output_folder, sample_rate=5)
                     print(f"Extracted {frames} frames from {video_path}")
 
+def get_calibration_matrix(path, cam_id):
+    """
+    Read the camera calibration matrix from .mat file.
+    
+    Args:
+        path (str): Path to the matlab calibration file.
+    
+    Returns:
+        numpy.ndarray: The camera calibration matrix.
+    """
+    
+    # Load the .mat file
+    mat = scipy.io.loadmat(path, squeeze_me=True, struct_as_record=False)
+    
+    # Extract the camera's calibration struct
+    cam_struct = mat[cam_id]
+
+    # Get the intrinsic matrix (in MATLAB it's 3x3 in column-major)
+    return cam_struct.K
+
 if __name__ == "__main__":
     # Define base folders
     base_folder = "P3Data"
     image_type = "Undist"
     
-    process_scene_videos(base_folder, image_type)
+    if not os.path.exists(os.path.join(base_folder, "ExtractedFrames")):
+        print("ExtractedFrames folder not found. Extracting frames...")
+        process_scene_videos(base_folder, image_type)
+    
+    if 'calib_mat_front.npy' not in os.listdir(os.path.join(base_folder, "Calib")):
+        print("Extracting calibration matrix...")
+        K = get_calibration_matrix(os.path.join(base_folder, "Calib/calibration_struct"), 'front')
+        
+        # Save the calibration matrix as a numpy file
+        np.save(os.path.join(base_folder, "Calib/calib_mat_front.npy"), K)
+    

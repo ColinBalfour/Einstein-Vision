@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 from PIL import Image
@@ -26,7 +25,13 @@ class LaneSegmentationModel:
     ]
     
     def __init__(self, threshold=0.8, checkpoint_path=None):
+        """
+        Initializes the LaneSegmentationModel by loading the pretrained Mask R-CNN model for lane segmentation.
         
+        Args:
+            threshold (float, optional): The confidence threshold for filtering out detections. Defaults to 0.8.
+            checkpoint_path (str, optional): Path to the model checkpoint. If None, the default path is used.
+        """
         self.threshold = threshold
         
         if checkpoint_path is None:
@@ -57,8 +62,19 @@ class LaneSegmentationModel:
         ])
         
     def infer(self, image_path, show=False, draw_boxes=False, OUT_DIR=None):
+        """
+        Performs lane segmentation on a given image and optionally displays or saves the result.
         
-        print(image_path)
+        Args:
+            image_path (str): Path to the image to be segmented.
+            show (bool, optional): If True, displays the segmented image using OpenCV. Defaults to False.
+            draw_boxes (bool, optional): If True, draws bounding boxes around detected lanes. Defaults to False.
+            OUT_DIR (str, optional): Directory to save the output image. If None, the result is not saved. Defaults to None.
+        
+        Returns:
+            tuple: A tuple containing the segmentation masks, bounding boxes, and labels for the detected lanes.
+        """
+        # print(image_path)
         image = Image.open(image_path)
         # keep a copy of the original image for OpenCV functions and applying masks
         orig_image = image.copy()
@@ -86,11 +102,30 @@ class LaneSegmentationModel:
     
     
     def get_lanes_from_image(self, image_path) -> List[Lane]:
+        """
+        Processes an image, performs lane segmentation, and extracts the detected lanes as Lane objects.
+        
+        Args:
+            image_path (str): Path to the image to be processed.
+        
+        Returns:
+            List[Lane]: A list of Lane objects representing the detected lanes in the image.
+        """
         masks, boxes, labels = self.infer(image_path)
         return self.get_lanes_from_detection(masks, boxes, labels)
     
     def get_lanes_from_detection(self, masks, boxes, labels) -> List[Lane]:
+        """
+        Converts segmentation masks, bounding boxes, and labels from a detection model into Lane objects.
         
+        Args:
+            masks (list): A list of binary masks for detected lanes.
+            boxes (list): A list of bounding boxes for detected lanes.
+            labels (list): A list of labels corresponding to the detected lanes.
+        
+        Returns:
+            List[Lane]: A list of Lane objects created from the detected masks, boxes, and labels.
+        """
         lanes = []
         for mask, box, label in zip(masks, boxes, labels):
             
@@ -112,8 +147,5 @@ class LaneSegmentationModel:
                 lane_type=label,
                 world_coords=None
             ))
-            
-            
-            
-            
-            
+        
+        return lanes

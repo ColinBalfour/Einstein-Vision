@@ -3,10 +3,14 @@ import depth_pro
 
 class MetricDepthModel:
     
-    def __init__(self):
+    def __init__(self, calibration_mtx):
         # Load model and preprocessing transform
         self.model, self.transform = depth_pro.create_model_and_transforms()
         self.model.eval()
+        self.device = self.model.device
+        
+        self.calibration_mtx = calibration_mtx
+        
         
     def infer(self, image_path, focal_length=None):
         
@@ -24,5 +28,8 @@ class MetricDepthModel:
         
         return depth, focallength_px
         
+    def get_world_coords_from_keypoints(self, keypoints):
+        
+        fx, fy, cx, cy = self.calibration_mtx[0, 0], self.calibration_mtx[1, 1], self.calibration_mtx[0, 2], self.calibration_mtx[1, 2]
         
         
