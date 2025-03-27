@@ -10,7 +10,7 @@ import torch.nn as nn
 from torchvision.transforms import transforms as transforms
 
 from Features.Lane import Lane
-from infer_utils import draw_segmentation_map, get_outputs
+from .infer_utils import draw_segmentation_map, get_outputs
 
 class LaneSegmentationModel:
     
@@ -24,7 +24,7 @@ class LaneSegmentationModel:
         'solid-line'
     ]
     
-    def __init__(self, threshold=0.8, checkpoint_path=None):
+    def __init__(self, threshold=0.4, checkpoint_path=None):
         """
         Initializes the LaneSegmentationModel by loading the pretrained Mask R-CNN model for lane segmentation.
         
@@ -46,13 +46,13 @@ class LaneSegmentationModel:
         model.roi_heads.mask_predictor.mask_fcn_logits = nn.Conv2d(256, len(LaneSegmentationModel.INSTANCE_CATEGORY_NAMES), kernel_size=(1, 1), stride=(1, 1))
         
         # initialize the model
-        ckpt = torch.load(checkpoint_path)
+        ckpt = torch.load(checkpoint_path, weights_only=False)
         model.load_state_dict(ckpt['model'])
         # set the computation device
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # load the modle on to the computation device and set to eval mode
         model.to(device).eval()
-        print(model)
+        # print(model)
         print(device)
         
         self.model = model
@@ -91,7 +91,7 @@ class LaneSegmentationModel:
         # visualize the image
         if show:
             cv2.imshow('Segmented image', np.array(result))
-            cv2.waitKey(1)
+            cv2.waitKey(0)
         
         # set the save path
         if OUT_DIR:
@@ -128,7 +128,7 @@ class LaneSegmentationModel:
         """
         lanes = []
         for mask, box, label in zip(masks, boxes, labels):
-            
+            print(mask.shape)
             all_points = np.argwhere(mask)
             # convert to x, y coordinates
             x_coords = all_points[:, 1]
@@ -139,7 +139,8 @@ class LaneSegmentationModel:
             
             keypoints_y = np.linspace(min(y_coords), max(y_coords), num=10)
             keypoints_x = np.polyval(coeffs, keypoints_y)
-            keypoints = np.column_stack((keypoints_x, keypoints_y))
+            # keypoints = np.column_stack((keypoints_x, keypoints_y))
+            keypoints = np.column_stack((x_coords, y_coords))
             
             # create a Lane object
             lanes.append(Lane(

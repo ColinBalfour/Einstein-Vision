@@ -22,7 +22,7 @@ class Lane:
         self.lane_type = lane_type
 
     def __repr__(self):
-        return f"Lane(type={self.lane_type}, color={self.lane_color}, keypoints={self.keypoints})"
+        return f"Lane(type={self.lane_type}, keypoints={self.keypoints}, world_coords={self.world_coords})"
     
     def __str__(self):
         return self.__repr__()
