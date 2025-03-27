@@ -1,0 +1,71 @@
+import cv2
+import os
+import re
+import numpy
+print(numpy.version.version)
+
+def extract_frames(video_path, output_folder, sample_rate=5):
+    """Extract every 5th frame from video"""
+    # Create output folder if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Open the video
+    cap = cv2.VideoCapture(video_path)
+    frame_count = 0
+    saved_count = 0
+
+    # Read and process frames
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Save every 5th frame
+        if frame_count % sample_rate == 0:
+            output_path = f"{output_folder}/frame_{saved_count:06d}.jpg"
+            cv2.imwrite(output_path, frame)
+            saved_count += 1
+
+        frame_count += 1
+
+    # Release the video capture object
+    cap.release()
+    print(f"Total frames: {frame_count}")
+    print(f"Saved frames: {saved_count}")
+    return saved_count
+
+
+# Process all videos in scene folders
+def process_scene_videos(base_folder, output_base, path):
+    # Get all directories that match the pattern "scene X"
+    for item in os.listdir(base_folder):
+        item_path = os.path.join(base_folder, item)
+        print(item_path)
+
+        # Check if it's a directory and matches our naming pattern
+        if os.path.isdir(item_path) and item.lower().startswith("scene"):
+            # Extract scene number using regex
+            match = re.search(r'\d+', item)
+            if match:
+                scene_num = match.group(0)
+                scene_folder = os.path.join(item_path, path)
+                print(scene_folder)
+
+                # Process all videos in this scene folder
+                for video_file in os.listdir(scene_folder):
+                    if video_file.startswith('front'):
+                        video_path = os.path.join(scene_folder, video_file)
+                        # Create output folder with same scene numbering
+                        output_folder = os.path.join(output_base, f"scene_{scene_num}")
+
+                        print(f"Processing {video_file} from {item}...")
+                        frames = extract_frames(video_path, output_folder, sample_rate=5)
+                        print(f"Extracted {frames} frames from {video_file}")
+
+
+# Usage example
+base_folder = "C:/Users/simra/OneDrive - Worcester Polytechnic Institute (wpi.edu)/2. Computer Vision/P3Data/P3Data/Sequences"  # Folder containing scene 1, scene 2, etc.
+path = 'Undist'
+output_base = "C:/Users/simra/PycharmProjects/Einstein-Vision/Code/data"  # Base folder for extracted frames
+process_scene_videos(base_folder, output_base, path)
