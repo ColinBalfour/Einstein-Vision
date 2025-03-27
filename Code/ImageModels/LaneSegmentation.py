@@ -86,9 +86,9 @@ class LaneSegmentationModel:
     
     
     def get_lanes_from_image(self, image_path) -> List[Lane]:
-        pass
+        masks, boxes, labels = self.infer(image_path)
+        return self.get_lanes_from_detection(masks, boxes, labels)
     
-    
-    def get_lanes_from_detection(self, maxes, boxes, labels) -> List[Lane]:
+    def get_lanes_from_detection(self, masks, boxes, labels) -> List[Lane]:
         pass
         
