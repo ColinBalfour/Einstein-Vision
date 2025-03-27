@@ -90,5 +90,30 @@ class LaneSegmentationModel:
         return self.get_lanes_from_detection(masks, boxes, labels)
     
     def get_lanes_from_detection(self, masks, boxes, labels) -> List[Lane]:
-        pass
         
+        lanes = []
+        for mask, box, label in zip(masks, boxes, labels):
+            
+            all_points = np.argwhere(mask)
+            # convert to x, y coordinates
+            x_coords = all_points[:, 1]
+            y_coords = all_points[:, 0]
+            
+            # fit a polynomial to the points
+            coeffs = np.polyfit(y_coords, x_coords, 2)
+            
+            keypoints_y = np.linspace(min(y_coords), max(y_coords), num=10)
+            keypoints_x = np.polyval(coeffs, keypoints_y)
+            keypoints = np.column_stack((keypoints_x, keypoints_y))
+            
+            # create a Lane object
+            lanes.append(Lane(
+                keypoints=keypoints,
+                lane_type=label,
+                world_coords=None
+            ))
+            
+            
+            
+            
+            
