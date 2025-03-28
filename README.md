@@ -15,3 +15,5 @@ Lane Segmentation (only need checkpoint):
     Download, https://drive.usercontent.google.com/download?id=1WRu0e5GYlsKmQp0UR_ZyuYoXQmQWR4Pj&export=download&authuser=0
 
 Data (name P3Data, place in root): https://app.box.com/s/zjys9xcefyqfj2oxkwsm5irgz6g3hp1l
+
+Traffic sign detection:https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/blob/main/process_video.py
