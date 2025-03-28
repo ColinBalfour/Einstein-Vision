@@ -16,4 +16,5 @@ Lane Segmentation (only need checkpoint):
 
 Data (name P3Data, place in root): https://app.box.com/s/zjys9xcefyqfj2oxkwsm5irgz6g3hp1l
 
-Traffic sign detection:https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/blob/main/process_video.py
+Github repo Traffic sign detection:https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/blob/main/process_video.py
+Pretrained Model - https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/tree/main/model
