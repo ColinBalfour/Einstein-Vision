@@ -5,6 +5,8 @@ import numpy as np
 import open3d as o3d
 import os
 import torch
+import cv2
+import matplotlib.pyplot as plt
 
 class MetricDepthModel:
     
@@ -26,7 +28,7 @@ class MetricDepthModel:
         self.calibration_mtx = calibration_mtx
         
         
-    def infer(self, image_path, focal_length=None):
+    def infer(self, image_path, focal_length=None, save_path=None):
         
         # Load and preprocess an image.
         image, _, f_px = depth_pro.load_rgb(image_path)
@@ -39,11 +41,29 @@ class MetricDepthModel:
         prediction = self.model.infer(image, f_px=f_px)
         
         # Get the depth and focal length
-        depth = prediction["depth"].cpu().numpy()  # Depth in [m].
+        depth = prediction["depth"].detach().cpu().numpy().squeeze()  # Depth in [m].
         focallength_px = prediction["focallength_px"].cpu()  # Focal length in pixels.
         
-        return depth, focallength_px
+        inverse_depth = 1 / depth
+        # Visualize inverse depth instead of depth, clipped to [0.1m;250m] range for better visualization.
+        max_invdepth_vizu = min(inverse_depth.max(), 1 / 0.1)
+        min_invdepth_vizu = max(1 / 250, inverse_depth.min())
+        inverse_depth_normalized = (inverse_depth - min_invdepth_vizu) / (
+            max_invdepth_vizu - min_invdepth_vizu
+        )
         
+        if save_path:
+            # Save as color-mapped "turbo" jpg image.
+            cmap = plt.get_cmap("turbo")
+            color_depth = (cmap(inverse_depth_normalized)[..., :3] * 255).astype(
+                np.uint8
+            )
+            # cv2.imwrite(os.path.join(save_path, "normalized_depth.png"), inverse_depth_normalized)
+            cv2.imwrite(os.path.join(save_path, "depth_im.png"), color_depth)
+
+        
+        return depth, inverse_depth_normalized, focallength_px
+
     def get_world_coords_from_keypoints(self, keypoints, depth_image):
         
         fx, fy, cx, cy = self.calibration_mtx[0, 0], self.calibration_mtx[1, 1], self.calibration_mtx[0, 2], self.calibration_mtx[1, 2]

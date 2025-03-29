@@ -10,3 +10,4 @@ source get_pretrained_models.sh
 pip install opencv-python
 pip install opencv-python-headless
 pip install scipy
+pip install ultralytics

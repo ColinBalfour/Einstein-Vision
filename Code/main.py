@@ -29,13 +29,19 @@ def main():
     lanes = lane_model.get_lanes_from_detection(masks, boxes, labels)
     print(lanes[0])
     
-    depth, focal = depth_model.infer(image_path=image_path, focal_length=None)
+    depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
     
     # display depth image
-    depth = np.squeeze(depth)
-    plt.imshow(depth, cmap='plasma')
-    plt.colorbar()
-    plt.show()
+    # plt.ion()
+    # fig = plt.figure()
+    # ax_rgb = fig.add_subplot(121)
+    # ax_disp = fig.add_subplot(122)
+    
+    # ax_rgb.imshow(img)
+    # ax_disp.imshow(normalized_depth, cmap="turbo")
+    # fig.canvas.draw()
+    # fig.canvas.flush_events()
+    # plt.show()
     
     pointcloud = np.zeros((0, 3))
     for lane in lanes:

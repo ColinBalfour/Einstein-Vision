@@ -33,9 +33,6 @@ class Lane:
     def get_lane_type(self):
         return self.lane_type
     
-    def get_lane_color(self):
-        return self.lane_color
-    
     def get_world_coords(self):
         if self.world_coords is None:
             print("Warning: world coordinates are not set.")

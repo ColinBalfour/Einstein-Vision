@@ -7,64 +7,38 @@ import sys
 import depth_pro
 from ultralytics import YOLO
 
-
-def initialize_models():
-    # Check GPU availability and set CUDA settings
-    if torch.cuda.is_available():
-        torch.backends.cudnn.benchmark = True
-        print(f"Using GPU: {torch.cuda.get_device_name(0)}")
-    else:
-        print("GPU not available, using CPU instead")
-
-    # Load YOLO model with GPU support
-    model = YOLO('yolo11x.pt')
-    if torch.cuda.is_available():
-        model.to('cuda')  # Move model to GPU
-
-    # Initialize depth model
-    depth_model = MetricDepthModel()
-
-    return model, depth_model
+from Features.Object import Object
 
 
-# depth model
-class MetricDepthModel:
-    def __init__(self):
-        # Load model and preprocessing transform
-        self.model, self.transform = depth_pro.create_model_and_transforms()
+class Vehicle(Object):
+    
+    VEHICLE_TYPES = [
+        "car",
+        "SUV",
+        "truck",
+        "bus",
+    ]
+    
+    def __init__(self, bbox, center, confidence, pose=None, vehicle_type='car'):
+        super().__init__(bbox, center, confidence, pose) # Call the parent constructor to initialize bbox, center, confidence, and pose
+        
+        if vehicle_type not in Vehicle.VEHICLE_TYPES:
+            raise ValueError(f"Invalid lane type: {vehicle_type}. Must be one of {Vehicle.VEHICLE_TYPES}")
+        
+        self.vehicle_type = vehicle_type
+        
+    def __repr__(self):
+        # Custom string representation of the Vehicle object
+        return f"Vehicle(type={self.vehicle_type}, bbox={self.bbox}, center={self.center}, confidence={self.confidence}, pose={self.pose})"
+        
+    def __str__(self):
+        return self.__repr__()
+    
+    def get_vehicle_type(self):
+        return self.vehicle_type
+        
 
-        # Move model to GPU if available
-        if torch.cuda.is_available():
-            self.model = self.model.cuda()
-
-        self.model.eval()
-
-    def infer(self, image_path, focal_length=None):
-        # Load and preprocess an image
-        image, _, f_px = depth_pro.load_rgb(image_path)
-        image = self.transform(image)
-
-        # Move image to GPU if available
-        if torch.cuda.is_available():
-            image = image.cuda()
-
-        if focal_length:
-            f_px = focal_length
-
-        # Run inference
-        prediction = self.model.infer(image, f_px=f_px)
-        depth = prediction["depth"]  # Depth
-
-        # Move depth map back to CPU for numpy processing
-        if torch.cuda.is_available():
-            depth = depth.cpu().numpy()
-        else:
-            depth = depth.numpy()
-
-        focallength_px = prediction["focallength_px"]  # Focal length in pixels
-
-        return depth, focallength_px
-
+# NOTE: nothing below is used (moved to main.py), but left for reference. Should delete later.
 
 def process_scene(scene, data_dir, output_dir, model, depth_model, conf_threshold):
     print(f"\nProcessing scene: {scene}")
@@ -164,7 +138,7 @@ def main():
     scene = 'scene_1'
 
     # Initialize models
-    model, depth_model = initialize_models()
+    # model, depth_model = initialize_models()
 
     # Process each scene
     # for scene in scenes:
@@ -172,7 +146,7 @@ def main():
     output_dir = os.path.join(base_output_dir, scene)
     os.makedirs(output_dir, exist_ok=True)
 
-    process_scene(scene, data_dir, output_dir, model, depth_model, conf_threshold)
+    # process_scene(scene, data_dir, output_dir, model, depth_model, conf_threshold)
 
 
 
