@@ -36,6 +36,17 @@ class Vehicle(Object):
     
     def get_vehicle_type(self):
         return self.vehicle_type
+    
+    def to_json(self, image_path=None):
+        """
+        Convert the Vehicle object to a JSON-compatible dictionary format.
+        This can be used to serialize the object for saving to a JSON file.
+        """
+        return {
+            'name': 'Vehicle',  # Name of the object type
+            'image_path': image_path,  # Optional: path to the image if needed for reference
+            'object_data': super().to_json()
+        }
         
 
 # NOTE: nothing below is used (moved to main.py), but left for reference. Should delete later.

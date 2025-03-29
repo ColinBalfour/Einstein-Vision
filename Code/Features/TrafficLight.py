@@ -7,70 +7,32 @@ import sys
 import depth_pro
 from ultralytics import YOLO
 
+from Features.Object import Object
 
-def initialize_models():
-    # Check GPU availability and set CUDA settings
-    if torch.cuda.is_available():
-        torch.backends.cudnn.benchmark = True
-        print(f"Using GPU: {torch.cuda.get_device_name(0)}")
-    else:
-        print("GPU not available, using CPU instead")
+class TrafficLight(Object):
 
-    # Load YOLO model with GPU support
-    model = YOLO('yolo11x.pt')
-    if torch.cuda.is_available():
-        model.to('cuda')  # Move model to GPU
+    def __init__(self, bbox, center, confidence, pose=None):
+        super().__init__(bbox, center, confidence, pose)  # Call the parent constructor to initialize bbox, center, confidence, and pose
 
-    # Initialize depth model
-    depth_model = MetricDepthModel()
-
-    # initialise traffic sign
-    detector = YOLO("C:/Users/simra/Projects/Code/traffic-sign-detection-using-yolov11/model/traffic_sign_detector.pt",
-                    task="detect")
-    if torch.cuda.is_available():
-        detector.to('cuda')
-
-    return model, depth_model, detector
+    def __repr__(self):
+        return f"TrafficLight(bbox={self.bbox}, center={self.center}, confidence={self.confidence})"
+    
+    def __str__(self):
+        return self.__repr__()
+    
+    def to_json(self):
+        """
+        Convert the TrafficLight object to a JSON-compatible dictionary format.
+        This can be used to serialize the object for saving to a JSON file.
+        """
+        return {
+            'name': 'TrafficLight',  # Name of the object type
+            'object_data': super().to_json()
+        }
 
 
-# depth model
-class MetricDepthModel:
-    def __init__(self):
-        # Load model and preprocessing transform
-        self.model, self.transform = depth_pro.create_model_and_transforms()
 
-        # Move model to GPU if available
-        if torch.cuda.is_available():
-            self.model = self.model.cuda()
-
-        self.model.eval()
-
-    def infer(self, image_path, focal_length=None):
-        # Load and preprocess an image
-        image, _, f_px = depth_pro.load_rgb(image_path)
-        image = self.transform(image)
-
-        # Move image to GPU if available
-        if torch.cuda.is_available():
-            image = image.cuda()
-
-        if focal_length:
-            f_px = focal_length
-
-        # Run inference
-        prediction = self.model.infer(image, f_px=f_px)
-        depth = prediction["depth"]  # Depth
-
-        # Move depth map back to CPU for numpy processing
-        if torch.cuda.is_available():
-            depth = depth.cpu().numpy()
-        else:
-            depth = depth.numpy()
-
-        focallength_px = prediction["focallength_px"]  # Focal length in pixels
-
-        return depth, focallength_px
-
+# NOTE: nothing below is used (moved to main.py), but left for reference. Should delete later.
 
 def process_scene(scene, data_dir, output_dir, model, depth_model, detector, conf_threshold):
     print(f"\nProcessing scene: {scene}")
@@ -243,14 +205,14 @@ def main():
     scene = 'scene_10'
 
     # Initialize models
-    model, depth_model, detector = initialize_models()
+    # model, depth_model, detector = initialize_models()
 
     # Process scene
     data_dir = os.path.join(base_data_dir, scene)
     output_dir = os.path.join(base_output_dir, scene)
     os.makedirs(output_dir, exist_ok=True)
 
-    process_scene(scene, data_dir, output_dir, model, depth_model, detector, conf_threshold)
+    # process_scene(scene, data_dir, output_dir, model, depth_model, detector, conf_threshold)
 
 if __name__ == "__main__":
     main()

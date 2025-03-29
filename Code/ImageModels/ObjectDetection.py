@@ -38,7 +38,7 @@ class ObjectDetectionModel:
             raise ValueError(f"Provided classes {self.classes} are not valid. Must be a subset of {self.ALL_CLASSES}")
             
         
-    def infer(self, image_path):
+    def infer(self, image_path, save=False):
         
         results = self.model(image_path, conf=self.conf_threshold)
         
@@ -46,25 +46,28 @@ class ObjectDetectionModel:
         output = dict.fromkeys(self.classes, [])
         for r in results:
             # Save the image with detections
-            r.save(filename=image_path)
+            if save:
+                r.save(filename=f"{image_path.split('.')[-1]}_detected.png") 
             
             # Extract masks, boxes, labels, and confidences
-            masks = r.masks.xy
-            boxes = r.boxes.xyxy
-            labels = r.boxes.cls
-            confidences = r.boxes.conf
+            # masks = r.masks.xy
+            # boxes = r.boxes.xyxy  
+            # labels = r.boxes.cls
+            # confidences = r.boxes.conf
             
-            for box in boxes:
+            for box in r.boxes:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 conf = float(box.conf[0])
                 cls = int(box.cls[0])
                 class_name = self.model.names[cls]
+                print(f"Detected {class_name} with confidence {conf:.2f} at bbox: [{x1}, {y1}, {x2}, {y2}]")
                 
                 # Get depth for this object
                 # Center point of the bounding box
                 center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
                 
-                if class_name not in [self.classes]:
+                if class_name not in self.classes:
+                    print(f"Class '{class_name}' is not in the specified classes for this model. Must be in {self.classes}. Skipping...")
                     continue
 
                 if class_name == 'car':
@@ -135,6 +138,7 @@ class ObjectDetectionModel:
         for class_name, detections in output.items():
             # If there are no detections for this class, skip
             if not detections:
+                print(f"No detections for class '{class_name}'. Skipping visualization.")
                 continue
             
             # Pick a color for the current class. Use a default if class not in map.

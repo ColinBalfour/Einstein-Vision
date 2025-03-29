@@ -63,6 +63,20 @@ class MetricDepthModel:
 
         
         return depth, inverse_depth_normalized, focallength_px
+    
+    def get_translation_at_point(self, x, y, depth_image):
+        
+        fx, fy, cx, cy = self.calibration_mtx[0, 0], self.calibration_mtx[1, 1], self.calibration_mtx[0, 2], self.calibration_mtx[1, 2]
+        
+        # Get the depth at a specific pixel (x, y)
+        z = depth_image[y, x]  # Depth in meters at pixel (x, y)
+        if not np.isfinite(z):
+            return 0.0
+        
+        x = z * (x - cx) / fx  # X coordinate in meters
+        y = z * (y - cy) / fy
+        
+        return np.array([x, y, z], dtype=np.float64)
 
     def get_world_coords_from_keypoints(self, keypoints, depth_image):
         

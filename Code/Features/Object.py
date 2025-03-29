@@ -35,3 +35,27 @@ class Object:
         if self.pose is None:
             print("Warning: pose is not set.")
         return self.pose
+    
+    def set_pose(self, pose):
+        """
+        Set the 3D world coordinates for the object
+        This can be used to update the pose after the initial detection
+        :param pose: 3D world coordinates (e.g., [x, y, z])
+        """
+        self.pose = pose
+    
+    def to_json(self):
+        if self.pose is None:
+            # If pose is None, we can still serialize the object without it
+            print("Warning: pose is None, will not be included in JSON output. BLENDER RENDER WILL NOT WORK.")
+            
+        """
+        Convert the object to a JSON-serializable dictionary
+        This can be used to save the object data in JSON format
+        """
+        return {
+            'bbox': self.bbox,
+            'center': self.center,
+            'confidence': self.confidence,
+            'pose': self.pose
+        }
