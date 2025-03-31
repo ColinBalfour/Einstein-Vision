@@ -36,14 +36,22 @@ class ObjectDetectionModel:
             self.classes = self.YOLO_DEFAULT_CLASS_DETECTIONS
         if any([c not in self.ALL_CLASSES for c in self.classes]):
             raise ValueError(f"Provided classes {self.classes} are not valid. Must be a subset of {self.ALL_CLASSES}")
-            
+    
+    @staticmethod
+    def viz_output(output):
+        print()
+        for class_name, detections in output.items():
+            print(f"Class '{class_name}' has {len(detections)} detections:")
+            for det in detections:
+                print(f" - {type(det).__name__} with confidence: {det.confidence:.2f}")
+        print()
         
     def infer(self, image_path, save=False):
         
         results = self.model(image_path, conf=self.conf_threshold)
         
         # Process results
-        output = dict.fromkeys(self.classes, [])
+        output = {key: [] for key in self.classes}
         for r in results:
             # Save the image with detections
             if save:
@@ -81,22 +89,38 @@ class ObjectDetectionModel:
                 
                 elif class_name == 'person':
                     # Process pedestrian detection
-                    obj = None
+                    obj = Pedestrian(
+                        bbox=[x1, y1, x2, y2],
+                        center=[center_x, center_y],
+                        confidence=conf
+                    )
                 
                 elif class_name == 'traffic light':
                     # Process traffic light detection
-                    obj = None
+                    obj = TrafficLight(
+                        bbox=[x1, y1, x2, y2],
+                        center=[center_x, center_y],
+                        confidence=conf
+                    )
                 
-                elif class_name == 'road sign':
+                elif class_name == 'stop sign':
                     # Process road sign detection
-                    obj = None
+                    obj = RoadSign(
+                        bbox=[x1, y1, x2, y2],
+                        center=[center_x, center_y],
+                        confidence=conf,
+                        sign_type='STOP'
+                    )
                 
                 else:
                     raise ValueError(f"Something went wrong! Class {class_name} is not handled in the infer method. Likely caused by passing an invalid class name to this object at init.")
                 
                 # Append to the output dictionary
+                print(f"Adding {class_name} to output with bbox: [{x1}, {y1}, {x2}, {y2}] and confidence: {conf:.2f}")
                 output[class_name].append(obj)
-                
+                self.viz_output(output) 
+
+        self.viz_output(output) 
         return output
         
         
@@ -143,6 +167,8 @@ class ObjectDetectionModel:
             
             # Pick a color for the current class. Use a default if class not in map.
             color = class_color_map.get(class_name, (0, 255, 255))
+            
+            print(f"Visualizing {len(detections)} detections for class '{class_name}'")
             
             # Draw each detected object
             for obj in detections:

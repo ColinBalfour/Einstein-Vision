@@ -11,8 +11,10 @@ from Features.Object import Object
 
 class TrafficLight(Object):
 
-    def __init__(self, bbox, center, confidence, pose=None):
+    def __init__(self, bbox, center, confidence, pose=None, color=None):
         super().__init__(bbox, center, confidence, pose)  # Call the parent constructor to initialize bbox, center, confidence, and pose
+        
+        self.color = color  # Color of the traffic light (e.g., 'red', 'green', 'yellow'). This can be set later if needed.
 
     def __repr__(self):
         return f"TrafficLight(bbox={self.bbox}, center={self.center}, confidence={self.confidence})"
@@ -20,13 +22,25 @@ class TrafficLight(Object):
     def __str__(self):
         return self.__repr__()
     
-    def to_json(self):
+    def get_color(self):
+        """
+        Get the color of the traffic light.
+        
+        Returns:
+            str: The color of the traffic light (e.g., 'red', 'green', 'yellow'). 
+                 Returns None if not set.
+        """
+        return self.color
+    
+    def to_json(self, image_path=None):
         """
         Convert the TrafficLight object to a JSON-compatible dictionary format.
         This can be used to serialize the object for saving to a JSON file.
         """
         return {
             'name': 'TrafficLight',  # Name of the object type
+            'image_path': image_path,  # Optional: path to the image if needed for reference
+            'color': self.color,  # Include the color of the traffic light if set
             'object_data': super().to_json()
         }
 

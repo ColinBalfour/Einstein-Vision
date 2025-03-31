@@ -1,7 +1,7 @@
+from Features.Object import Object
 
 
-
-class RoadSign:
+class RoadSign(Object):
     
     SIGN_TYPES = {
         "STOP": [],
@@ -11,12 +11,10 @@ class RoadSign:
         "CROSSWALK": [],
     }
     
-    def __init__(self, sign_type, idx=None, pose=None, attr=None):
+    def __init__(self, bbox, center, confidence, pose=None, sign_type='STOP', attr=None):
+        super().__init__(bbox, center, confidence, pose)
         
-        self.type = sign_type
-        self.id = idx
-        self.pose = pose
-        
+        self.type = sign_type        
         if self.type not in RoadSign.SIGN_TYPES:
             raise ValueError(f"Invalid sign type: {self.type}. Must be one of {RoadSign.SIGN_TYPES}")
         
@@ -25,7 +23,7 @@ class RoadSign:
             self.attr.update(attr)
         
     def __str__(self):
-        return f"RoadSign(type={self.type}, id={self.id}, pose={self.pose}, attr={self.attr})"
+        return f"RoadSign(type={self.type}, pose={self.pose}, attr={self.attr})"
     
     def __repr__(self):
         return self.__str__()
@@ -41,15 +39,6 @@ class RoadSign:
         
     def get_type(self):
         return self.type
-    
-    def get_id(self):
-        return self.id
-    
-    def get_pose(self):
-        return self.pose
-    
-    def set_pose(self, pose):
-        self.pose = pose
         
     def get_attr_names(self):
         return list(self.attr.keys())
@@ -59,5 +48,21 @@ class RoadSign:
     
     def get_attr_dict(self):
         return self.attr.copy()
+    
+    def to_json(self, image_path=None):
+        """
+        Convert the RoadSign object to a JSON-compatible dictionary format.
+        This can be used to serialize the object for saving to a JSON file.
+        
+        Returns:
+            dict: A dictionary representation of the RoadSign object.
+        """
+        return {
+            'name': 'RoadSign',  # Name of the object type
+            'image_path': image_path,  # Optional: path to the image if needed for reference
+            'type': self.type,  # Type of the road sign
+            'attr': self.attr,  # Attribute of the sign type
+            'object_data': super().to_json()  # Call the parent method to get bbox, center, confidence, and pose
+        }
 
         

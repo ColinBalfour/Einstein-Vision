@@ -19,6 +19,17 @@ class Pedestrian(Object):
 
     def __str__(self):
         return self.__repr__()
+    
+    def to_json(self, image_path=None):
+        """
+        Convert the Pedestrian object to a JSON-compatible dictionary format.
+        This can be used to serialize the object for saving to a JSON file.
+        """
+        return {
+            'name': 'Pedestrian',  # Name of the object type
+            'image_path': image_path,  # Optional: path to the image if needed for reference
+            'object_data': super().to_json()  # Call the parent method to get bbox, center, confidence, and pose
+        }
 
 if __name__ == "__main__":
     # Load model
