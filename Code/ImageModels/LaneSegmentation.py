@@ -139,8 +139,8 @@ class LaneSegmentationModel:
             
             keypoints_y = np.linspace(min(y_coords), max(y_coords), num=10)
             keypoints_x = np.polyval(coeffs, keypoints_y)
-            # keypoints = np.column_stack((keypoints_x, keypoints_y))
-            keypoints = np.column_stack((x_coords, y_coords))
+            keypoints = np.column_stack((keypoints_x, keypoints_y))
+            # keypoints = np.column_stack((x_coords, y_coords))
             
             # create a Lane object
             lanes.append(Lane(

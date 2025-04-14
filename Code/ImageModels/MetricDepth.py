@@ -58,7 +58,7 @@ class MetricDepthModel:
             color_depth = (cmap(inverse_depth_normalized)[..., :3] * 255).astype(
                 np.uint8
             )
-            # cv2.imwrite(os.path.join(save_path, "normalized_depth.png"), inverse_depth_normalized)
+            cv2.imwrite(os.path.join(save_path, "normalized_depth.png"), (inverse_depth_normalized * 255).astype(np.uint8))
             cv2.imwrite(os.path.join(save_path, "depth_im.png"), color_depth)
 
         
@@ -101,4 +101,15 @@ class MetricDepthModel:
         return pointsxyz
         
         
-        
+if __name__ == '__main__':
+    # Example usage
+    camera_mtx = np.load("P3Data/Calib/calib_mat_front.npy")
+    
+    image_path = "P3Data/ExtractedFrames/Undist/scene_8/frame_000101.png"
+    
+    depth_model = MetricDepthModel(camera_mtx)
+    depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
+    
+    print("Depth shape:", depth.shape)
+    print("Inverse depth shape:", normalized_depth.shape)
+    print("Focal length in pixels:", focal)
