@@ -2,7 +2,7 @@
 import depth_pro
 from depth_pro.depth_pro import DEFAULT_MONODEPTH_CONFIG_DICT
 import numpy as np
-import open3d as o3d
+# import open3d as o3d
 import os
 import torch
 import cv2
