@@ -175,6 +175,8 @@ cython_debug/
 
 P3Data*
 ml-depth-pro
+Detic
+detectron2
 20230814_Lane_Detection_using_Mask_RCNN_An_Instance_Segmentation_Approach
 *.pth
 *.pt
