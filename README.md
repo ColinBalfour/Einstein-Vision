@@ -14,6 +14,8 @@ Lane Segmentation (only need checkpoint):
     Article, https://debuggercafe.com/lane-detection-using-mask-rcnn/
     Download, https://drive.usercontent.google.com/download?id=1WRu0e5GYlsKmQp0UR_ZyuYoXQmQWR4Pj&export=download&authuser=0
 
+HumanPose - "yolo11x-pose.pt"
+
 Vehicle classification - https://github.com/MaryamBoneh/Vehicle-Detection
 yolov11 - https://docs.ultralytics.com/models/yolo11/#performance-metrics
 
