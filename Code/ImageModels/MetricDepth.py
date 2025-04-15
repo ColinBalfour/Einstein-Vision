@@ -12,7 +12,7 @@ import tqdm
 
 class MetricDepthModel:
     
-    def __init__(self, calibration_mtx):
+    def __init__(self, calibration_mtx, load_model=True):
         # Load model and preprocessing transform
         depth_pro_config = DEFAULT_MONODEPTH_CONFIG_DICT
         depth_pro_config.checkpoint_uri = os.path.join("ml-depth-pro/", depth_pro_config.checkpoint_uri)
@@ -20,8 +20,12 @@ class MetricDepthModel:
         
         # print(depth_pro_config.checkpoint_uri)
         
-        self.model, self.transform = depth_pro.create_model_and_transforms(config=depth_pro_config, device=device)
-        self.model.eval()
+        self.model = None        
+        if load_model:
+            # Load the model
+            self.model, self.transform = depth_pro.create_model_and_transforms(config=depth_pro_config, device=device)
+            self.model.eval()
+
         self.device = device
         
         # print(self.model)
@@ -63,6 +67,7 @@ class MetricDepthModel:
             color_depth = (cmap(inverse_depth_normalized)[..., :3] * 255).astype(
                 np.uint8
             )
+            np.save(os.path.join(save_path, f"{scene_img}_depth.npy"), depth)
             cv2.imwrite(os.path.join(save_path, f"{scene_img}_normalized_depth.png"), (inverse_depth_normalized * 255).astype(np.uint8))
             cv2.imwrite(os.path.join(save_path, f"{scene_img}_depth_im.png"), color_depth)
 
@@ -75,16 +80,8 @@ class MetricDepthModel:
         scene_img = image_path.split('/')[-2:]
         scene_img = "/".join(scene_img).split(".")[0]
         
-        im_path = os.path.join(output_dir, f"{scene_img}_normalized_depth.png")
-        depth_image = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
-        
-        # Convert to metric depth
-        depth_image = depth_image.astype(np.float32) / 255.0
-        depth_image = 1 / (depth_image * (1 / 0.1) - 1 / 250)
-        depth_image[~np.isfinite(depth_image)] = 0
-        depth_image[depth_image < 0.1] = 0
-        depth_image[depth_image > 250] = 0
-        depth_image = cv2.resize(depth_image, (640, 480), interpolation=cv2.INTER_LINEAR)
+        im_path = os.path.join(output_dir, f"{scene_img}_depth.npy")
+        depth_image = np.load(im_path)
         
         return depth_image
         
