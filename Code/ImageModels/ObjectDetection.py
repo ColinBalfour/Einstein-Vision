@@ -1,17 +1,16 @@
-
 import sys
 import cv2
 import torch
 import numpy as np
+import time
 
 from ultralytics import YOLO
 
-
 try:
-    sys.path.insert(0, 'ImageModels/Detic/third_party/CenterNet2')
+    sys.path.insert(0, 'Detic/third_party/CenterNet2')
     from centernet.config import add_centernet_config
 
-    sys.path.insert(0, 'ImageModels/Detic')
+    sys.path.insert(0, 'Detic')
     from detic.config import add_detic_config
     from detic.modeling.text.text_encoder import build_text_encoder
     from detic.modeling.utils import reset_cls_test
@@ -20,17 +19,32 @@ except ImportError:
 
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
+from detectron2.data import MetadataCatalog
+
+def get_clip_embeddings(vocabulary, prompt='a '):
+    text_encoder = build_text_encoder(pretrain=True)
+    text_encoder.eval()
+    texts = [prompt + x for x in vocabulary]
+    emb = text_encoder(texts).detach().permute(1, 0).contiguous().cpu()
+    return emb
 
 
+# Import your Feature classes
 from Features.Vehicle import Vehicle
 from Features.Pedestrian import Pedestrian
 from Features.TrafficLight import TrafficLight
 from Features.RoadSign import RoadSign
 
+
 class ObjectDetectionModel:
-    
+    """
+    Base class for object detection pipelines, with a default get_outputs() 
+    and visualize() method that can be used by YOLODetector or DeticDectector.
+    """
+
     YOLO_DEFAULT_CLASS_DETECTIONS = [
         'car',
+        'truck',
         'person',
         'traffic light',
         'stop sign'
@@ -44,13 +58,13 @@ class ObjectDetectionModel:
     ]
     
     def __init__(self, model_path='yolov12x.pt', classes=None, conf_threshold=0.65):
-        
         self.model_path = model_path
         self.conf_threshold = conf_threshold
         self.classes = classes
     
     @staticmethod
     def viz_output(output):
+        """Utility for printing how many detections per class were found."""
         print()
         for class_name, detections in output.items():
             print(f"Class '{class_name}' has {len(detections)} detections:")
@@ -58,361 +72,416 @@ class ObjectDetectionModel:
                 print(f" - {type(det).__name__} with confidence: {det.confidence:.2f}")
         print()
         
-    # Default method to be overridden by subclasses
     def infer(self, image_path, save=False):
-        return None
+        """
+        Default method to be overridden by subclasses.
+        Must return (boxes, centers, masks, confidences, labels).
+        """
+        return [], [], [], [], []
     
     def get_outputs(self, image_path, save=False):
+        """
+        1) Runs inference -> gets (boxes, centers, masks, confidences, labels).
+        2) Instantiates the appropriate Feature objects (Vehicle, Pedestrian, etc.).
+        3) Returns a dictionary keyed by class name.
+        """
+        boxes, centers, masks, confidences, labels = self.infer(image_path, save=save)
         
-        boxes, confidences, labels = self.infer(image_path, save=save)
-        
-        # Process results
+        # Prepare output: dictionary of lists for each class
         output = {key: [] for key in self.classes}
-        for box, conf, class_name in zip(boxes, confidences, labels):
+        
+        # Build Feature objects
+        for box, center, mask, conf, class_name in zip(boxes, centers, masks, confidences, labels):
             x1, y1, x2, y2 = box
-            print(f"Detected {class_name} with confidence {conf:.2f} at bbox: [{x1}, {y1}, {x2}, {y2}]")
-            
-            # Get depth for this object
-            # Center point of the bounding box
-            center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
+            center_x, center_y = center
+            print(f"Detected '{class_name}' with confidence {conf:.2f} at bbox: [{x1}, {y1}, {x2}, {y2}]")
             
             if class_name not in self.classes:
-                print(f"Class '{class_name}' is not in the specified classes for this model. Must be in {self.classes}. Skipping...")
+                print(f"Class '{class_name}' is not in the specified classes. Skipping.")
                 continue
 
-            if class_name == 'car':
-                # Process vehicle detection
+            if class_name in ['car', 'truck', 'SUV', 'bicycle']:
                 obj = Vehicle(
                     bbox=[x1, y1, x2, y2],
                     center=[center_x, center_y],
+                    mask=mask,
                     confidence=conf,
-                    vehicle_type='car', 
+                    vehicle_type=class_name
                 )
-            
             elif class_name == 'person':
-                # Process pedestrian detection
                 obj = Pedestrian(
                     bbox=[x1, y1, x2, y2],
                     center=[center_x, center_y],
                     confidence=conf
                 )
-            
             elif class_name == 'traffic light':
-                # Process traffic light detection
                 obj = TrafficLight(
                     bbox=[x1, y1, x2, y2],
                     center=[center_x, center_y],
                     confidence=conf
                 )
-            
             elif class_name == 'stop sign':
-                # Process road sign detection
                 obj = RoadSign(
                     bbox=[x1, y1, x2, y2],
                     center=[center_x, center_y],
                     confidence=conf,
                     sign_type='STOP'
                 )
+                
+            elif class_name == 'motorcycle':
+                pass
+                
             
             else:
-                raise ValueError(f"Something went wrong! Class {class_name} is not handled in the infer method. Likely caused by passing an invalid class name to this object at init.")
+                raise ValueError(
+                    f"Unhandled class '{class_name}' in infer. Possibly invalid configuration."
+                )
             
-            # Append to the output dictionary
-            print(f"Adding {class_name} to output with bbox: [{x1}, {y1}, {x2}, {y2}] and confidence: {conf:.2f}")
+            print(f"Adding '{class_name}' to output with bbox: [{x1}, {y1}, {x2}, {y2}] "
+                  f"and confidence {conf:.2f}")
             output[class_name].append(obj)
             self.viz_output(output) 
 
         self.viz_output(output) 
         return output
         
-        
-    # GPT Prompt: write a visualizer for the above code
     def visualize(self, image, output):
         """
-        Draws bounding boxes and labels onto the given image using the detection outputs.
+        Draw bounding boxes, labels, centers, and segmentation masks on the image.
         
-        Parameters:
-            img (np.ndarray): The original image to draw on (OpenCV image).
-            output (dict): A dictionary of detections keyed by class name, where each
-                        value is a list of detection objects. For example:
-                        {
-                            'car': [Vehicle(...), Vehicle(...)],
-                            'person': [Pedestrian(...), Pedestrian(...)],
-                            ...
-                        }
-        
-        Returns:
-            np.ndarray: The image with bounding boxes and labels drawn.
+        :param image: np.ndarray, the original BGR image
+        :param output: dict, e.g. {'car': [Vehicle(), ...], 'person': [Pedestrian(), ...]}
+        :return: np.ndarray with drawings
         """
-        img = image.copy()  # Make a copy of the image to draw on
-        
-        # You can define distinct colors for each class if you want
-        # Here is an optional color map for illustration:
+        img = image.copy()  # Work on a copy
+
+        # Optional color map (BGR format)
         class_color_map = {
-            'car': (0, 255, 0),             # green
-            'person': (255, 0, 0),          # blue
-            'traffic light': (0, 0, 255),   # red
-            'stop sign': (255, 255, 0)      # cyan
+            'car': (0, 255, 0),           # green
+            'person': (255, 0, 0),        # blue
+            'traffic light': (0, 0, 255), # red
+            'stop sign': (255, 255, 0)    # cyan
         }
         
-        # Font configuration for text
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.6
         thickness = 2
         
-        # Iterate over each class's detections
+        def apply_mask(image_bgr, mask_bool, color, alpha=0.4):
+            """
+            Blend a single-channel boolean mask into 'image_bgr' using 'color'.
+            mask_bool: 2D boolean array
+            color: (B, G, R) 
+            alpha: blending factor
+            """
+            for c in range(3):
+                image_bgr[mask_bool, c] = \
+                    image_bgr[mask_bool, c] * (1 - alpha) + alpha * color[c]
+
+        # Go through each class's list of detections
         for class_name, detections in output.items():
-            # If there are no detections for this class, skip
             if not detections:
-                print(f"No detections for class '{class_name}'. Skipping visualization.")
                 continue
             
-            # Pick a color for the current class. Use a default if class not in map.
-            color = class_color_map.get(class_name, (0, 255, 255))
+            color = class_color_map.get(class_name, (0, 255, 255))  # fallback color
             
-            print(f"Visualizing {len(detections)} detections for class '{class_name}'")
-            
-            # Draw each detected object
             for obj in detections:
-                # Retrieve bounding box
                 x1, y1, x2, y2 = obj.bbox
-                # Draw rectangle
-                cv2.rectangle(img, 
-                            (int(x1), int(y1)), 
-                            (int(x2), int(y2)), 
-                            color, 
-                            thickness)
+                cx, cy = obj.center
                 
-                # Prepare label text (class name + confidence)
+                # Draw bounding box
+                cv2.rectangle(
+                    img, 
+                    (int(x1), int(y1)), 
+                    (int(x2), int(y2)), 
+                    color, 
+                    thickness
+                )
+                
+                # Label text
                 label = f"{class_name} {obj.confidence:.2f}"
+                (text_w, text_h), baseline = cv2.getTextSize(label, font, font_scale, thickness)
                 
-                # Calculate text size to create a background for better visibility
-                (text_width, text_height), baseline = cv2.getTextSize(label, font, font_scale, thickness)
+                # Filled rectangle behind label
+                cv2.rectangle(
+                    img, 
+                    (int(x1), int(y1) - text_h - baseline),
+                    (int(x1) + text_w, int(y1)),
+                    color,
+                    -1
+                )
                 
-                # Optionally create a filled rectangle behind the text label
-                cv2.rectangle(img, 
-                            (int(x1), int(y1) - text_height - baseline),
-                            (int(x1) + text_width, int(y1)), 
-                            color, 
-                            -1)
+                # Put the label
+                cv2.putText(
+                    img, 
+                    label,
+                    (int(x1), int(y1) - baseline),
+                    font,
+                    font_scale,
+                    (0, 0, 0),  # black text
+                    thickness
+                )
                 
-                # Put the text label slightly above the top-left corner of the bounding box
-                cv2.putText(img, 
-                            label, 
-                            (int(x1), int(y1) - baseline),
-                            font, 
-                            font_scale, 
-                            (0, 0, 0),  # text color (black) for contrast
-                            thickness)
-                
-                # If you also want to visualize the 'center' attribute, you can mark it:
-                center_x, center_y = obj.center
-                cv2.circle(img, (center_x, center_y), 4, color, -1)
+                # Draw center
+                cv2.circle(img, (int(cx), int(cy)), 4, color, -1)
+
+                # If there's a mask, blend it
+                if hasattr(obj, "mask") and obj.mask is not None:
+                    apply_mask(img, obj.mask, color=color, alpha=0.4)
         
         return img
-    
-    
+
+
 class YOLODetector(ObjectDetectionModel):
+    """
+    A YOLO-based detector for older YOLO versions with .xyn (polygon) data 
+    instead of .masks or .masks.data.
+    """
     
-    def __init__(self, model_path='yolov12x.pt', classes=None, conf_threshold=0.65):
-        
+    def __init__(self, model_path='yolov11x.pt', classes=None, conf_threshold=0.65):
         self.model = YOLO(model_path)
         if torch.cuda.is_available():
-            self.model.to('cuda')  # Move model to GPU
-            
+            self.model.to('cuda')
+        # Force a predict call so the model is "ready"
         self.model.predict()
         
         self.conf_threshold = conf_threshold
         
-        self.classes = classes 
+        # Validate classes
         if classes is None:
-            self.classes = self.YOLO_DEFAULT_CLASS_DETECTIONS
-        if any([c not in self.ALL_CLASSES for c in self.classes]):
-            raise ValueError(f"Provided classes {self.classes} are not valid. Must be a subset of {self.ALL_CLASSES}")
-    
-    
+            classes = self.YOLO_DEFAULT_CLASS_DETECTIONS
+        invalid = [c for c in classes if c not in self.ALL_CLASSES]
+        if invalid:
+            raise ValueError(
+                f"Classes {invalid} not in known list. Must be subset of {self.ALL_CLASSES}"
+            )
+        
+        self.classes = classes
+
     def infer(self, image_path, save=False):
-        
+        """
+        1) Reads the image for shape (H, W).
+        2) Runs YOLO inference with conf threshold.
+        3) Extracts polygons from r.masks.xyn, fill them onto a blank mask with cv2.fillPoly.
+        4) Calculates centroid from mask if not empty, else uses bounding box center.
+        5) Returns: (boxes, centers, masks, confidences, labels)
+        """
+        # Read original image
+        orig_img = cv2.imread(image_path)
+        if orig_img is None:
+            raise ValueError(f"Could not read image: {image_path}")
+        H, W = orig_img.shape[:2]
+
         results = self.model(image_path, conf=self.conf_threshold)
-        
-        # Process results
-        boxes = [] # x1, y1, x2, y2
-        confidences = [] # confidence
-        labels = [] # class name
+
+        # Prepare lists
+        boxes = []
+        centers = []
+        masks = []
+        confidences = []
+        labels = []
+
         for r in results:
-            # Save the image with detections
             if save:
-                r.save(filename=f"{image_path.split('.')[-1]}_detected.png") 
-            
-            # Extract masks, boxes, labels, and confidences
-            # masks = r.masks.xy
-            # boxes = r.boxes.xyxy  
-            # labels = r.boxes.cls
-            # confidences = r.boxes.conf
-            
-            for box in r.boxes:
+                # Save YOLO's bounding-box annotated image
+                r.save(filename=f"{image_path.rsplit('.', 1)[0]}_detected.png")
+
+            # If YOLO can't produce polygons, set to empty
+            all_poly_segments = r.masks.xyn if (r.masks and r.masks.xyn is not None) else []
+
+            for i, box in enumerate(r.boxes):
                 x1, y1, x2, y2 = box_xy = box.xyxy[0].tolist()
-                
                 conf = float(box.conf[0])
-                cls = int(box.cls[0])
-                class_name = self.model.names[cls]
-                # print(f"Detected {class_name} with confidence {conf:.2f} at bbox: [{x1}, {y1}, {x2}, {y2}]")
-                
+                cls_idx = int(box.cls[0])
+                class_name = self.model.names[cls_idx]
+
+                # Default center: bounding box
+                cx = (x1 + x2) / 2.0
+                cy = (y1 + y2) / 2.0
+
+                # Build a blank mask
+                mask_filled = np.zeros((H, W), dtype=np.uint8)
+
+                # If i < len(all_poly_segments), retrieve polygon data 
+                if i < len(all_poly_segments):
+                    poly_data = all_poly_segments[i]
+
+                    # Case 1: poly_data is a list of polygons
+                    if isinstance(poly_data, list):
+                        for single_poly in poly_data:
+                            # single_poly should be an np.ndarray of shape (N, 2)
+                            if (isinstance(single_poly, np.ndarray) and
+                                single_poly.ndim == 2 and
+                                single_poly.shape[1] == 2):
+                                pts = []
+                                for (xn, yn) in single_poly:
+                                    px = int(xn * W)
+                                    py = int(yn * H)
+                                    pts.append([px, py])
+                                pts_arr = np.array(pts, dtype=np.int32)
+                                cv2.fillPoly(mask_filled, [pts_arr], 1)
+                            else:
+                                # Unexpected shape; skip
+                                pass
+
+                    # Case 2: poly_data is a single polygon array
+                    elif isinstance(poly_data, np.ndarray):
+                        # e.g. shape (N, 2)
+                        if poly_data.ndim == 2 and poly_data.shape[1] == 2:
+                            pts = []
+                            for (xn, yn) in poly_data:
+                                px = int(xn * W)
+                                py = int(yn * H)
+                                pts.append([px, py])
+                            pts_arr = np.array(pts, dtype=np.int32)
+                            cv2.fillPoly(mask_filled, [pts_arr], 1)
+                        else:
+                            # Not an array of shape (N,2)
+                            pass
+                    else:
+                        # poly_data is neither list nor ndarray
+                        pass
+
+                # If mask_filled is not empty, compute centroid
+                ys, xs = np.where(mask_filled == 1)
+                if len(xs) > 0:
+                    cx = float(np.mean(xs))
+                    cy = float(np.mean(ys))
+
+                center = (int(cx), int(cy))
+                mask_bool = (mask_filled == 1) if np.any(mask_filled) else None
+
+                # Store results
                 boxes.append(box_xy)
+                centers.append(center)
+                masks.append(mask_bool)
                 confidences.append(conf)
                 labels.append(class_name)
-    
-        return boxes, confidences, labels
-    
-    
-    
+
+        return boxes, centers, masks, confidences, labels
+
+
 class DeticDectector(ObjectDetectionModel):
+    """
+    Optional class for DETIC-based detection. 
+    Left largely unchanged except for ensuring we return the 
+    (boxes, centers, masks, confidences, labels) shape.
+    """
     
     def __init__(self, model_path=None, vocabulary=None, conf_threshold=0.3, config_path=None):
-        """
-        Initialize the taillight detector
-
-        Args:
-            model_path (str): Path to DETIC model weights
-            config_path (str): Path to DETIC config file
-            confidence_threshold (float): Confidence threshold for detections
-            use_gpu (bool): Whether to use GPU for inference
-        """
-        # icky to read as kwargs because its so long lol
-        model_path = model_path or "ImageModels/models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth"
-        config_path = config_path or "ImageModels/Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml"
+        model_path = model_path or "Detic/models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth"
+        config_path = config_path or "Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml"
         classes = vocabulary.keys() if vocabulary else None
         
         super().__init__(model_path=model_path, classes=classes, conf_threshold=conf_threshold)
         
         self.predictor = None
-
-        # Vocabulary for taillight detection
         self.vocabulary = vocabulary
+        self.flattened_vocab = sum(list(self.vocabulary.values()), [])
         self.config_path = config_path
-
-        # Initialize the model
         self._setup_model()
 
     def _setup_model(self):
-        """
-        Set up the DETIC model
-        """
-        try:
-            # Create config
+        # try:
             cfg = get_cfg()
             add_centernet_config(cfg)
             add_detic_config(cfg)
-
-            # Load config from file
             cfg.merge_from_file(self.config_path)
-
-            # Set model weights
             cfg.MODEL.WEIGHTS = self.model_path
-
-            # Configure model parameters
             cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = self.conf_threshold
             cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = 'rand'
             cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = True
-            cfg.MODEL.ROI_HEADS.USE_ZEROSHOT_CLS = True
-
-            # Set device
+            # cfg.MODEL.ROI_HEADS.USE_ZEROSHOT_CLS = True
             cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-            # Create predictor
+            cfg.freeze()
+            
             self.predictor = DefaultPredictor(cfg)
+            self.cfg = cfg
 
-            # Set custom vocabulary
             self._set_vocabulary(self.vocabulary)
-
             print("Detic model initialized successfully")
-        except Exception as e:
-            print(f"Error setting up DETIC model: {e}")
-            self.predictor = None
+        # except Exception as e:
+        #     print(f"Error setting up DETIC model: {e}")
+        #     self.predictor = None
         
     def _set_vocabulary(self, vocabulary):
-        """
-        Set custom vocabulary for taillight detection
-        """
-        if self.predictor is None:
+        if self.predictor is None or not vocabulary:
             return
-        
-        # Ensure vocabulary is a list of strings (self.vocabulary is a dict mapping class names to vocab)
-        vocabulary = np.array(list(vocabulary.values())).flatten()
 
-        try:
-            # Build text encoder
-            text_encoder = build_text_encoder(self.predictor.model.cfg)
-
-            # Get text features
-            text_features = text_encoder(vocabulary).float()
-
-            # Reset classifier
-            reset_cls_test(self.predictor.model, text_features)
-        except Exception as e:
-            print(f"Error setting vocabulary: {e}")
+        # try:
+        metadata = MetadataCatalog.get(str(time.time()))
+        metadata.thing_classes = self.flattened_vocab
+        classifier = get_clip_embeddings(metadata.thing_classes)
+        num_classes = len(metadata.thing_classes)
+        reset_cls_test(self.predictor.model, classifier, num_classes)
+        # except Exception as e:
+        #     print(f"Error setting vocabulary: {e}")
             
-    def class_name_from_vocab(self, vocab):
+    def class_name_from_vocab(self, vocab_item):
         for class_name, vocab_list in self.vocabulary.items():
-            if vocab in vocab_list:
+            if vocab_item in vocab_list:
                 return class_name
         return None 
     
     def infer(self, image, save=False):
         """
-        Detect taillights and brakelights in an image
-
-        Args:
-            image: Image as numpy array or path to image file
-
-        Returns:
-            list: List of Taillight objects
+        Returns the standard shape (boxes, centers, masks, confidences, labels).
+        Detic might produce masks if you enable them; here we store None for now.
         """
         if self.predictor is None:
             print("Predictor not initialized. Cannot perform detection.")
-            return []
+            return [], [], [], [], []
 
-        # Load image if path is provided
         if isinstance(image, str):
             image = cv2.imread(image)
             if image is None:
                 print(f"Could not read image: {image}")
-                return []
+                return [], [], [], [], []
 
-        # Get image dimensions
-        height, width = image.shape[:2]
+        boxes_out = []
+        centers_out = []
+        masks_out = []
+        confidences_out = []
+        labels_out = []
 
-        boxes = []
-        confidences = []
-        labels = []
-        try:
-            # Run inference
-            outputs = self.predictor(image)
+        # try:
+        outputs = self.predictor(image)
+        instances = outputs["instances"].to("cpu")
+        
+        pred_boxes_np = (instances.pred_boxes.tensor.numpy()
+                        if instances.has("pred_boxes") else [])
+        pred_scores_np = (instances.scores.numpy()
+                        if instances.has("scores") else [])
+        pred_classes_np = (instances.pred_classes.numpy()
+                        if instances.has("pred_classes") else [])
+        
+        # If the model had pred_masks, you could store them here too:
+        # pred_masks = instances.pred_masks.numpy() if instances.has("pred_masks") else []
 
-            # Process predictions
-            instances = outputs["instances"].to("cpu")
-            boxes = instances.pred_boxes.tensor.numpy() if instances.has("pred_boxes") else []
-            scores = instances.scores.numpy() if instances.has("scores") else []
-            classes = instances.pred_classes.numpy() if instances.has("pred_classes") else []
-
-            for box, score, cls_id in zip(boxes, scores, classes):
-                # Get class name
-                vocab_name = self.vocabulary[cls_id] if cls_id < len(self.vocabulary) else "unknown"
-
-                # Normalize coordinates
-                x1, y1, x2, y2 = box
-
-                class_name = self.class_name_from_vocab(vocab_name)
-                if class_name is None:
-                    print(f"Class name not found for vocab: {vocab_name}. Skipping...")
-                    continue
-                
-                boxes.append(box)
-                confidences.append(score)
-                labels.append(class_name)
+        for box, score, cls_id in zip(pred_boxes_np, pred_scores_np, pred_classes_np):
+            x1, y1, x2, y2 = box
             
-            return boxes, confidences, labels
+            cx = (x1 + x2) / 2.0
+            cy = (y1 + y2) / 2.0
 
-        except Exception as e:
-            print(f"Error during detection: {e}")
-            return []
+            if cls_id < len(self.flattened_vocab):
+                vocab_name = self.flattened_vocab[cls_id]
+            else:
+                vocab_name = "unknown"
+
+            class_name = self.class_name_from_vocab(vocab_name)
+            if class_name is None:
+                print(f"Class name not found for vocab: {vocab_name}. Skipping...")
+                continue
+            
+            boxes_out.append([int(x1), int(y1), int(x2), int(y2)])
+            centers_out.append((int(cx), int(cy)))
+            masks_out.append(None)  # or a real mask if available
+            confidences_out.append(float(score))
+            labels_out.append(class_name)
+        
+        return boxes_out, centers_out, masks_out, confidences_out, labels_out
+
+        # except Exception as e:
+        #     print(f"Error during DETIC detection: {e}")
+        #     return [], [], [], [], []

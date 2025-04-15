@@ -6,10 +6,11 @@ class Object:
     This class represents a generic object from a YOLO output
     """
 
-    def __init__(self, bbox, center, confidence, pose=None):
+    def __init__(self, bbox, center, confidence, mask=None, pose=None):
         
         self.bbox = bbox # Bounding box in pixel coordinates [x1, y1, x2, y2]
         self.center = center  # Center of the bounding box in pixel coordinates
+        self.mask = mask # Optional: segmentation mask (if available)
         self.confidence = confidence # Confidence score of the detection
         self.pose = pose # 3D world coordinates (if available). This cis usually None at init and set later
     

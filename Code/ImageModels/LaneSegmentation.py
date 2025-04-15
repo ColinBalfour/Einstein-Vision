@@ -139,6 +139,10 @@ class LaneSegmentationModel:
             
             keypoints_y = np.linspace(min(y_coords), max(y_coords), num=10)
             keypoints_x = np.polyval(coeffs, keypoints_y)
+            
+            # filter out points outside the image
+            keypoints_x = np.clip(keypoints_x, 0, mask.shape[1] - 1)
+            
             keypoints = np.column_stack((keypoints_x, keypoints_y))
             # keypoints = np.column_stack((x_coords, y_coords))
             

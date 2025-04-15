@@ -13,11 +13,12 @@ from ImageModels.ObjectDetection import *  # Import ObjectDetection for object d
 
 def main():
     
-    image_path = "P3Data/ExtractedFrames/Undist/scene_9/frame_000298.png"
+    image_path = "P3Data/ExtractedFrames/Undist/scene_8/frame_000431.png"
     show = False
     
     
     img = cv2.imread(image_path)
+    cv2.imwrite("outputs/original_image.png", img)
     
     output_pth = "json_outputs"
     if not os.path.exists(output_pth):
@@ -39,9 +40,14 @@ def main():
     
     camera_mtx = np.load("P3Data/Calib/calib_mat_front.npy")
     
-    depth_model = MetricDepthModel(camera_mtx, load_model=True)
-    # depth = MetricDepthModel.get_depth_image_from_path(image_path)
-    depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
+    load_model = False
+    depth_model = MetricDepthModel(camera_mtx, load_model=load_model)
+    if load_model:
+        depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
+    else:
+        depth = MetricDepthModel.get_depth_image_from_path(image_path)
+        
+        
     
     lane_model = LaneSegmentationModel(checkpoint_path="Code/ImageModels/lane_segmentation.pth")
     
@@ -50,21 +56,35 @@ def main():
     
     
     object_model = YOLODetector(
-        model_path='yolo11x.pt',  # Path to the YOLO model
-        classes=['car', 'traffic light', 'person', 'stop sign'],
+        model_path='yolo11x-seg.pt',  # Path to the YOLO model
+        classes=ObjectDetectionModel.YOLO_DEFAULT_CLASS_DETECTIONS,
         conf_threshold=0.4  # Confidence threshold for detection
     )
-    
     
     # Run object detection on the same image
     results = object_model.get_outputs(image_path=image_path) # dictionary of Objects
     
-    # print(results)
+    
+    vehicle_model = DeticDectector(
+        vocabulary={
+            'car': ['car', 'mid_size_car', 'small_car'],
+            'SUV': ['SUV_car', 'crossover_car', 'compact_SUV', 'large_SUV'],
+            'hatchback': ['hatchback', 'compact'],
+            'pickup': ['pickup', 'pickup_truck'],
+            'truck': ['truck', 'bus', 'large_vehicle'],
+            'bicycle': ['bicycle'],
+            'motorcycle': ['motorcycle'],
+        }
+    )
+    vehicle_results = vehicle_model.get_outputs(image_path=image_path)
+    results.update(vehicle_results)  # Merge vehicle detection results with existing results
     
     # Process the results
     debug_img = object_model.visualize(img, results)
     
+    
     # Show the debug image with detections
+    plt.imsave("outputs/debug_image.png", debug_img)
     if show:
         plt.imshow(debug_img)
         plt.show()
