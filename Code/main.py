@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,10 +12,9 @@ from ImageModels.PoseEstimationModel import *
 
 
 def main():
-    
-    image_path = "P3Data/ExtractedFrames/Undist/scene_8/frame_000101.png"
+    image_path = "D:/3. Computer vision/Homeworks/Einstein-Vision/P3Data/ExtractedFrames/Undist/scene_10/frame_000052.png"
     img = cv2.imread(image_path)
-    
+
     output_pth = "json_outputs"
     if not os.path.exists(output_pth):
         os.makedirs(output_pth)
@@ -26,36 +24,39 @@ def main():
             if f.endswith('.json'):
                 os.remove(os.path.join(output_pth, f))
         print(f"Cleared existing JSON files in {output_pth}")
-    
+
     cv2.imshow("Original Image", img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
+
     # Convert the image from BGR to RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    
+
     camera_mtx = np.load("D:/3. Computer vision/Homeworks/Einstein-Vision/P3Data/Calib/calib_mat_front.npy")
-    
+
     depth_model = MetricDepthModel(camera_mtx)
-    depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
-    
+    depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None,
+                                                       save_path="outputs/depth")
+
     # lane_model = LaneSegmentationModel(checkpoint_path="Code/ImageModels/lane_segmentation.pth")
     #
     # masks, boxes, labels = lane_model.infer(image_path=image_path, show=True, draw_boxes=True, OUT_DIR="outputs")
     # lanes = lane_model.get_lanes_from_detection(masks, boxes, labels)
-    
-    
-    object_model = ObjectDetectionModel(
-        model_path='D:/3. Computer vision/Homeworks/Einstein-Vision/Code/ImageModels/yolo12x.pt',  # Path to the YOLO model
-        classes=['car', 'traffic light', 'person', 'stop sign'],
-        conf_threshold=0.4  # Confidence threshold for detection
-    )
-    
-    
-    # Run object detection on the same image
-    results = object_model.infer(image_path=image_path) # dictionary of Objects
 
-    #Initialise pose estimation model
+    # Initialize object detection model with taillight detection enabled
+    object_model = ObjectDetectionModel(
+        model_path='D:/3. Computer vision/Homeworks/Einstein-Vision/Code/ImageModels/yolo12x.pt',
+        classes=['car', 'traffic light', 'person', 'stop sign', 'taillight', 'brakelight'],  # Add taillight classes
+        conf_threshold=0.4,  # Confidence threshold for detection
+        enable_taillight_detection=True,  # Enable taillight detection
+        detic_model_path='D:/3. Computer vision/Homeworks/Einstein-Vision/Code/ImageModels/models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth'
+        # Path to DETIC model
+    )
+
+    # Run object detection on the same image
+    results = object_model.infer(image_path=image_path)  # dictionary of Objects
+
+    # Initialise pose estimation model
     print("running pose model")
     pose_model = PoseEstimationModel(
         model_path='D:/3. Computer vision/Homeworks/Einstein-Vision/Code/ImageModels/yolo11x-pose.pt',
@@ -92,27 +93,25 @@ def main():
                         break
 
     # print(results)
-    
+
     # Process the results
     debug_img = object_model.visualize(img, results)
-    
+
     # Show the debug image with detections
     plt.imshow(debug_img)
     plt.show()
-    
-    
+
     # display depth image
     fig = plt.figure()
     ax_rgb = fig.add_subplot(121)
     ax_disp = fig.add_subplot(122)
-    
+
     ax_rgb.imshow(img)
     ax_disp.imshow(normalized_depth, cmap="turbo")
     fig.canvas.draw()
     fig.canvas.flush_events()
     plt.show()
-    
-    
+
     # for i, lane in enumerate(lanes):
     #     world_pts = depth_model.get_world_coords_from_keypoints(lane.keypoints, depth)
     #     lane.set_world_coords(world_pts)  # Set the world coordinates for the lane object
@@ -122,14 +121,25 @@ def main():
     #         # Save the JSON output for each lane
     #         json.dump(json_object, json_file, indent=4)
     #     print(f"Saved JSON output for lane {i} to {json_filename}")
-        
-        
+
     i = 0
     for name, detected_objects in results.items():
         for obj in detected_objects:
-            center = obj.get_center()
+            # Get center point (works for both standard objects and taillights)
+            if hasattr(obj, 'get_center'):
+                center = obj.get_center()
+            elif hasattr(obj, 'center'):
+                center = obj.center
+            else:
+                # For taillights that might not have center/get_center
+                h, w = img.shape[:2]
+                center_x = ((obj.x1 + obj.x2) / 2)
+                center_y = ((obj.y1 + obj.y2) / 2)
+                center = [center_x, center_y]
+
+            # Get depth translation
             t = depth_model.get_translation_at_point(center[0], center[1], depth)
-            
+
             print(f"Detected {name} at pixel coordinates {center} with depth translation: {t}")
 
             # Set 3D position and orientation (assuming no rotation for simplicity)
@@ -148,9 +158,51 @@ def main():
             else:
                 # If no pose data, set the basic pose
                 obj.pose = obj_pose
-            
+
             # Save to JSON format
-            json_output = obj.to_json(image_path)
+            if hasattr(obj, 'to_json'):
+                json_output = obj.to_json(image_path)
+            else:
+                # For objects that don't have a to_json method (like taillights)
+                json_output = {
+                    "image_path": image_path,
+                    "class": name,
+                    "confidence": obj.confidence,
+                    "pose": obj_pose
+                }
+
+                # Add bbox if available
+                if hasattr(obj, 'bbox'):
+                    json_output["bbox"] = {
+                        "x1": float(obj.bbox[0]),
+                        "y1": float(obj.bbox[1]),
+                        "x2": float(obj.bbox[2]),
+                        "y2": float(obj.bbox[3])
+                    }
+                elif hasattr(obj, 'x1'):  # For taillights
+                    json_output["bbox"] = {
+                        "x1": float(obj.x1),
+                        "y1": float(obj.y1),
+                        "x2": float(obj.x2),
+                        "y2": float(obj.y2)
+                    }
+
+                # Add center if available
+                if hasattr(obj, 'center'):
+                    json_output["center"] = {
+                        "x": float(obj.center[0]),
+                        "y": float(obj.center[1])
+                    }
+                elif 'center' in locals():
+                    json_output["center"] = {
+                        "x": float(center[0]),
+                        "y": float(center[1])
+                    }
+
+                # Add is_brake flag for taillight/brakelight
+                if hasattr(obj, 'is_brake'):
+                    json_output["is_brake"] = obj.is_brake
+
             # Add keypoints to the JSON after to_json is called
             if name == 'person' and hasattr(obj, 'pose') and isinstance(obj.pose, dict):
                 if 'keypoints_2d' in obj.pose:
@@ -172,10 +224,5 @@ def main():
             i += 1
 
 
-    
-    
 if __name__ == "__main__":
     main()
-
-
-
