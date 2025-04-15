@@ -173,10 +173,16 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# data
 P3Data*
+outputs/depth
+
+# models/repos
 ml-depth-pro
 Detic
 detectron2
 20230814_Lane_Detection_using_Mask_RCNN_An_Instance_Segmentation_Approach
+
+# checkpoints
 *.pth
 *.pt

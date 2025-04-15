@@ -7,6 +7,8 @@ import os
 import torch
 import cv2
 import matplotlib.pyplot as plt
+import glob
+import tqdm
 
 class MetricDepthModel:
     
@@ -29,6 +31,9 @@ class MetricDepthModel:
         
         
     def infer(self, image_path, focal_length=None, save_path=None):
+        
+        scene_img = image_path.split('/')[-2:]
+        scene_img = "/".join(scene_img).split(".")[0]
         
         # Load and preprocess an image.
         image, _, f_px = depth_pro.load_rgb(image_path)
@@ -58,11 +63,30 @@ class MetricDepthModel:
             color_depth = (cmap(inverse_depth_normalized)[..., :3] * 255).astype(
                 np.uint8
             )
-            cv2.imwrite(os.path.join(save_path, "normalized_depth.png"), (inverse_depth_normalized * 255).astype(np.uint8))
-            cv2.imwrite(os.path.join(save_path, "depth_im.png"), color_depth)
+            cv2.imwrite(os.path.join(save_path, f"{scene_img}_normalized_depth.png"), (inverse_depth_normalized * 255).astype(np.uint8))
+            cv2.imwrite(os.path.join(save_path, f"{scene_img}_depth_im.png"), color_depth)
 
         
         return depth, inverse_depth_normalized, focallength_px
+    
+    def get_depth_image_from_path(self, image_path, output_dir="outputs/depth"):
+        
+        scene_img = image_path.split('/')[-2:]
+        scene_img = "/".join(scene_img).split(".")[0]
+        
+        im_path = os.path.join(output_dir, f"{scene_img}_normalized_depth.png")
+        depth_image = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
+        
+        # Convert to metric depth
+        depth_image = depth_image.astype(np.float32) / 255.0
+        depth_image = 1 / (depth_image * (1 / 0.1) - 1 / 250)
+        depth_image[~np.isfinite(depth_image)] = 0
+        depth_image[depth_image < 0.1] = 0
+        depth_image[depth_image > 250] = 0
+        depth_image = cv2.resize(depth_image, (640, 480), interpolation=cv2.INTER_LINEAR)
+        
+        return depth_image
+        
     
     def get_translation_at_point(self, x, y, depth_image):
         
@@ -102,14 +126,41 @@ class MetricDepthModel:
         
         
 if __name__ == '__main__':
+    
+    # get scene number from cmdline
+    import sys
+    if len(sys.argv) > 1:
+        scene_num = sys.argv[1]
+    else:
+        print("No scene number provided. Usage: python3 MetricDepth.py <scene_num>")
+        sys.exit(1)
+    
     # Example usage
     camera_mtx = np.load("P3Data/Calib/calib_mat_front.npy")
-    
-    image_path = "P3Data/ExtractedFrames/Undist/scene_8/frame_000101.png"
-    
     depth_model = MetricDepthModel(camera_mtx)
-    depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
     
-    print("Depth shape:", depth.shape)
-    print("Inverse depth shape:", normalized_depth.shape)
-    print("Focal length in pixels:", focal)
+    images_dir = f"P3Data/ExtractedFrames/Undist/scene_{scene_num}"
+    images = glob.glob(os.path.join(images_dir, "*.png"))
+    
+    for image_path in tqdm.tqdm(images):
+        depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
+        
+    # test get_depth_image_from_path
+    depth = depth_model.get_depth_image_from_path(images[0])
+    
+    inverse_depth = 1 / depth
+    # Visualize inverse depth instead of depth, clipped to [0.1m;250m] range for better visualization.
+    max_invdepth_vizu = min(inverse_depth.max(), 1 / 0.1)
+    min_invdepth_vizu = max(1 / 250, inverse_depth.min())
+    inverse_depth_normalized = (inverse_depth - min_invdepth_vizu) / (
+        max_invdepth_vizu - min_invdepth_vizu
+    )
+
+    # Save as color-mapped "turbo" jpg image.
+    cmap = plt.get_cmap("turbo")
+    color_depth = (cmap(inverse_depth_normalized)[..., :3] * 255).astype(
+        np.uint8
+    )
+    cv2.imwrite(os.path.join(f"outputs/depth/scene_{scene_num}", "atest_depth_normalized.png"), (inverse_depth_normalized * 255).astype(np.uint8))
+    cv2.imwrite(os.path.join(f"outputs/depth/scene_{scene_num}", "atest_depth_color.png"), color_depth)
+    
