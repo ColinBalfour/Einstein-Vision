@@ -9,6 +9,8 @@ import os
 from ImageModels.LaneSegmentation import *
 from ImageModels.MetricDepth import *
 from ImageModels.ObjectDetection import *  # Import ObjectDetection for object detection
+from ImageModels.PoseEstimationModel import *
+from ImageModels.SpeedOCR import OCRModel
 
 
 def main():
@@ -78,6 +80,22 @@ def main():
     )
     vehicle_results = vehicle_model.get_outputs(image_path=image_path)
     results.update(vehicle_results)  # Merge vehicle detection results with existing results
+    
+    
+    # speed_limit_model = DeticDectector(
+    #     vocabulary={
+    #         'speed_limit': ['speed_limit'],
+    #     }
+    # )
+    # ocr = OCRModel()
+    # speed_limit_results = speed_limit_model.get_outputs(image_path=image_path)
+    # for name, detected_objects in speed_limit_results.items():
+    #     if name == 'speed_limit':
+    #         for obj in detected_objects:
+    #             # Assuming the OCR model can read the text from the detected object
+    #             text = ocr.get_number(image_path, obj.bbox)
+    #             obj.attr['speed_limit'] = text
+    
     
     # Process the results
     debug_img = object_model.visualize(img, results)

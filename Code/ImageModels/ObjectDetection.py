@@ -127,10 +127,13 @@ class ObjectDetectionModel:
                     confidence=conf,
                     sign_type='STOP'
                 )
-                
-            elif class_name == 'motorcycle':
-                pass
-                
+            elif class_name == 'speed_limit':
+                obj = RoadSign(
+                    bbox=[x1, y1, x2, y2],
+                    center=[center_x, center_y],
+                    confidence=conf,
+                    sign_type='SPEED_LIMIT'
+                )
             
             else:
                 raise ValueError(
