@@ -69,7 +69,8 @@ class MetricDepthModel:
         
         return depth, inverse_depth_normalized, focallength_px
     
-    def get_depth_image_from_path(self, image_path, output_dir="outputs/depth"):
+    @staticmethod
+    def get_depth_image_from_path(image_path, output_dir="outputs/depth"):
         
         scene_img = image_path.split('/')[-2:]
         scene_img = "/".join(scene_img).split(".")[0]

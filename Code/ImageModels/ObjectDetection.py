@@ -357,8 +357,6 @@ class DeticDectector(ObjectDetectionModel):
             if vocab in vocab_list:
                 return class_name
         return None 
-
-        
     
     def infer(self, image, save=False):
         """
