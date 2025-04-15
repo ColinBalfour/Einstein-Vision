@@ -14,6 +14,9 @@ from ImageModels.ObjectDetection import *  # Import ObjectDetection for object d
 def main():
     
     image_path = "P3Data/ExtractedFrames/Undist/scene_9/frame_000298.png"
+    show = False
+    
+    
     img = cv2.imread(image_path)
     
     output_pth = "json_outputs"
@@ -26,32 +29,35 @@ def main():
                 os.remove(os.path.join(output_pth, f))
         print(f"Cleared existing JSON files in {output_pth}")
     
-    cv2.imshow("Original Image", img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    if show:
+        cv2.imshow("Original Image", img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
     
     # Convert the image from BGR to RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
     camera_mtx = np.load("P3Data/Calib/calib_mat_front.npy")
     
-    depth = MetricDepthModel.get_depth_image_from_path(image_path)
+    depth_model = MetricDepthModel(camera_mtx, load_model=True)
+    # depth = MetricDepthModel.get_depth_image_from_path(image_path)
+    depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
     
     lane_model = LaneSegmentationModel(checkpoint_path="Code/ImageModels/lane_segmentation.pth")
     
-    masks, boxes, labels = lane_model.infer(image_path=image_path, show=True, draw_boxes=True, OUT_DIR="outputs")
+    masks, boxes, labels = lane_model.infer(image_path=image_path, show=show, draw_boxes=True, OUT_DIR="outputs")
     lanes = lane_model.get_lanes_from_detection(masks, boxes, labels)
     
     
-    object_model = ObjectDetectionModel(
-        model_path='yolo12x.pt',  # Path to the YOLO model
+    object_model = YOLODetector(
+        model_path='yolo11x.pt',  # Path to the YOLO model
         classes=['car', 'traffic light', 'person', 'stop sign'],
         conf_threshold=0.4  # Confidence threshold for detection
     )
     
     
     # Run object detection on the same image
-    results = object_model.infer(image_path=image_path) # dictionary of Objects
+    results = object_model.get_outputs(image_path=image_path) # dictionary of Objects
     
     # print(results)
     
@@ -59,8 +65,9 @@ def main():
     debug_img = object_model.visualize(img, results)
     
     # Show the debug image with detections
-    plt.imshow(debug_img)
-    plt.show()
+    if show:
+        plt.imshow(debug_img)
+        plt.show()
     
     
     for i, lane in enumerate(lanes):
