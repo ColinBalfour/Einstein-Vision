@@ -268,7 +268,7 @@ class YOLODetector(ObjectDetectionModel):
     
 class DeticDectector(ObjectDetectionModel):
     
-    def __init__(self, model_path=None, classes=None, conf_threshold=0.3, config_path=None, vocabulary=None):
+    def __init__(self, model_path=None, vocabulary=None, conf_threshold=0.3, config_path=None):
         """
         Initialize the taillight detector
 
@@ -281,14 +281,13 @@ class DeticDectector(ObjectDetectionModel):
         # icky to read as kwargs because its so long lol
         model_path = model_path or "ImageModels/models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth"
         config_path = config_path or "ImageModels/Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml"
+        classes = vocabulary.keys() if vocabulary else None
         
         super().__init__(model_path=model_path, classes=classes, conf_threshold=conf_threshold)
         
         self.predictor = None
 
         # Vocabulary for taillight detection
-        if list(vocabulary.keys()) != classes:
-            raise ValueError(f"Provided classes {classes} do not match the vocabulary keys {list(vocabulary.keys())}.")
         self.vocabulary = vocabulary
         self.config_path = config_path
 
