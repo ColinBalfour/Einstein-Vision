@@ -14,6 +14,9 @@ from ImageModels.ObjectDetection import *  # Import ObjectDetection for object d
 def main():
     
     image_path = "P3Data/ExtractedFrames/Undist/scene_9/frame_000298.png"
+    show = False
+    
+    
     img = cv2.imread(image_path)
     
     output_pth = "json_outputs"
