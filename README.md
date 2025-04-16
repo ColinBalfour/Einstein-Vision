@@ -21,5 +21,7 @@ yolov11 - https://docs.ultralytics.com/models/yolo11/#performance-metrics
 
 Data (name P3Data, place in root): https://app.box.com/s/zjys9xcefyqfj2oxkwsm5irgz6g3hp1l
 
-Github repo Traffic sign detection:https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/blob/main/process_video.py
+Github repo Traffic Color detection:https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/blob/main/process_video.py
 Pretrained Model - https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/tree/main/model
+1. clone repository and follow instructions
+2. run process image.py
