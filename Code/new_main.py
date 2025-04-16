@@ -10,7 +10,7 @@ from ImageModels.LaneSegmentation import *
 from ImageModels.MetricDepth import *
 from ImageModels.ObjectDetection import *  # Import ObjectDetection for object detection
 from ImageModels.PoseEstimationModel import *
-from ImageModels.SpeedOCR import OCRModel
+from ImageModels.ClassicalModels import *
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
         cv2.destroyAllWindows()
     
     # Convert the image from BGR to RGB
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
     camera_mtx = np.load("P3Data/Calib/calib_mat_front.npy")
     
@@ -48,7 +48,6 @@ def main():
         depth, normalized_depth, focal = depth_model.infer(image_path=image_path, focal_length=None, save_path="outputs/depth")
     else:
         depth = MetricDepthModel.get_depth_image_from_path(image_path)
-        
         
     
     lane_model = LaneSegmentationModel(checkpoint_path="Code/ImageModels/lane_segmentation.pth")
@@ -64,7 +63,7 @@ def main():
     )
     
     # Run object detection on the same image
-    results = object_model.get_outputs(image_path=image_path) # dictionary of Objects
+    results = object_model.get_outputs(img=image_path) # dictionary of Objects
     
     
     vehicle_model = DeticDectector(
@@ -78,7 +77,65 @@ def main():
             'motorcycle': ['motorcycle'],
         }
     )
-    vehicle_results = vehicle_model.get_outputs(image_path=image_path)
+    tailight_model = DeticDectector(
+        vocabulary={
+            'brake_light': ['brake_light', 'car_brake_light', 'car_stopping_light', 'rear_light', 'red_light'],
+            'turn_signal': ['turn_signal', 'indicator_light', 'blinker_light'],
+        }
+    )
+    vehicle_results = vehicle_model.get_outputs(img=image_path)
+    
+    # Detect taillights on vehicles
+    for name, detected_objects in vehicle_results.items():
+        for i, obj in enumerate(detected_objects):
+            x1, y1, x2, y2 = obj.bbox
+            
+            padding = 10
+            x1 = max(0, x1 - padding)
+            y1 = max(0, y1 - padding)
+            x2 = min(img.shape[1], x2 + padding)
+            y2 = min(img.shape[0], y2 + padding)
+            
+            print(x1, y1, x2, y2)
+            # Crop the image to the detected vehicle bounding box
+            cropped_img = img.copy()[y1:y2, x1:x2]
+            cv2.imwrite(f"outputs/vehicles_debug/cropped_vehicle_{i}.png", cropped_img)
+            
+            # Check for taillights and turn signals
+            taillights = tailight_model.get_outputs(img=cropped_img)
+            
+            leftmost = None
+            rightmost = None
+            for light_name, light_objects in taillights.items():
+                for light_obj in light_objects:
+                    if leftmost is None or light_obj.bbox[0] < leftmost.bbox[0]:
+                        leftmost = light_obj
+                        
+                    if rightmost is None or light_obj.bbox[0] > rightmost.bbox[0]:
+                        rightmost = light_obj
+            
+            if leftmost:
+                # Set the direction based on the leftmost taillight
+                leftmost.direction = 'left'
+                # Update bbox coordinates to the original image
+                leftmost.bbox[0] += x1
+                leftmost.bbox[1] += y1
+                leftmost.bbox[2] += x1
+                leftmost.bbox[3] += y1
+                
+                obj.left_taillight = leftmost
+                
+            if rightmost:
+                # Set the direction based on the rightmost taillight
+                rightmost.direction = 'right'
+                # Update bbox coordinates to the original image
+                rightmost.bbox[0] += x1
+                rightmost.bbox[1] += y1
+                rightmost.bbox[2] += x1
+                rightmost.bbox[3] += y1
+                
+                obj.right_taillight = rightmost       
+    
     results.update(vehicle_results)  # Merge vehicle detection results with existing results
     
     

@@ -34,6 +34,7 @@ from Features.Vehicle import Vehicle
 from Features.Pedestrian import Pedestrian
 from Features.TrafficLight import TrafficLight
 from Features.RoadSign import RoadSign
+from Features.Taillight import Taillight
 
 
 class ObjectDetectionModel:
@@ -53,9 +54,20 @@ class ObjectDetectionModel:
     ALL_CLASSES = [
         *YOLO_DEFAULT_CLASS_DETECTIONS,  # Default classes for YOLO
         # Add more classes as per the model's capability
-        "taillight",
-        "brake light"
+        "turn_signal",
+        "brake_light"
     ]
+    
+    # Optional color map (BGR format)
+    CLASS_COLOR_MAP = {
+        'car': (0, 255, 0),           # green
+        'person': (255, 0, 0),        # blue
+        'traffic light': (0, 0, 255), # red
+        'stop sign': (255, 255, 0),    # cyan
+        'speed_limit': (255, 255, 255), # white
+        'brake_light': (0, 0, 255), # red
+        'turn_signal': (0, 255, 255), # yellow 
+    }
     
     def __init__(self, model_path='yolov12x.pt', classes=None, conf_threshold=0.65):
         self.model_path = model_path
@@ -72,20 +84,20 @@ class ObjectDetectionModel:
                 print(f" - {type(det).__name__} with confidence: {det.confidence:.2f}")
         print()
         
-    def infer(self, image_path, save=False):
+    def infer(self, img, image_path="", save=False):
         """
         Default method to be overridden by subclasses.
         Must return (boxes, centers, masks, confidences, labels).
         """
         return [], [], [], [], []
     
-    def get_outputs(self, image_path, save=False):
+    def get_outputs(self, img, image_path="", save=False):
         """
         1) Runs inference -> gets (boxes, centers, masks, confidences, labels).
         2) Instantiates the appropriate Feature objects (Vehicle, Pedestrian, etc.).
         3) Returns a dictionary keyed by class name.
         """
-        boxes, centers, masks, confidences, labels = self.infer(image_path, save=save)
+        boxes, centers, masks, confidences, labels = self.infer(img, image_path=image_path, save=save)
         
         # Prepare output: dictionary of lists for each class
         output = {key: [] for key in self.classes}
@@ -134,6 +146,13 @@ class ObjectDetectionModel:
                     confidence=conf,
                     sign_type='SPEED_LIMIT'
                 )
+            elif class_name in ['brake_light', 'turn_signal']:
+                obj = Taillight(
+                    bbox=[x1, y1, x2, y2],
+                    center=[center_x, center_y],
+                    confidence=conf,
+                    light_type=class_name
+                )
             
             else:
                 raise ValueError(
@@ -157,14 +176,27 @@ class ObjectDetectionModel:
         :return: np.ndarray with drawings
         """
         img = image.copy()  # Work on a copy
+        
+        # Go through each class's list of detections
+        for class_name, detections in output.items():
+            if not detections:
+                continue
+            
+            if detections[0].__class__.__name__ == 'Vehicle':
+                for obj in detections:
+                    if obj.left_taillight:
+                        print(f"Left taillight detected: {obj.left_taillight}")
+                        self.draw_viz(img, obj.left_taillight, obj.left_taillight.light_type.split('_')[0])
+                    if obj.right_taillight:
+                        print(f"Right taillight detected: {obj.right_taillight}")
+                        self.draw_viz(img, obj.right_taillight, obj.left_taillight.light_type.split('_')[0])
+            
+            for obj in detections:
+                self.draw_viz(img, obj, class_name)
+        
+        return img
 
-        # Optional color map (BGR format)
-        class_color_map = {
-            'car': (0, 255, 0),           # green
-            'person': (255, 0, 0),        # blue
-            'traffic light': (0, 0, 255), # red
-            'stop sign': (255, 255, 0)    # cyan
-        }
+    def draw_viz(self, img, obj, class_name):
         
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.6
@@ -180,60 +212,53 @@ class ObjectDetectionModel:
             for c in range(3):
                 image_bgr[mask_bool, c] = \
                     image_bgr[mask_bool, c] * (1 - alpha) + alpha * color[c]
-
-        # Go through each class's list of detections
-        for class_name, detections in output.items():
-            if not detections:
-                continue
-            
-            color = class_color_map.get(class_name, (0, 255, 255))  # fallback color
-            
-            for obj in detections:
-                x1, y1, x2, y2 = obj.bbox
-                cx, cy = obj.center
-                
-                # Draw bounding box
-                cv2.rectangle(
-                    img, 
-                    (int(x1), int(y1)), 
-                    (int(x2), int(y2)), 
-                    color, 
-                    thickness
-                )
-                
-                # Label text
-                label = f"{class_name} {obj.confidence:.2f}"
-                (text_w, text_h), baseline = cv2.getTextSize(label, font, font_scale, thickness)
-                
-                # Filled rectangle behind label
-                cv2.rectangle(
-                    img, 
-                    (int(x1), int(y1) - text_h - baseline),
-                    (int(x1) + text_w, int(y1)),
-                    color,
-                    -1
-                )
-                
-                # Put the label
-                cv2.putText(
-                    img, 
-                    label,
-                    (int(x1), int(y1) - baseline),
-                    font,
-                    font_scale,
-                    (0, 0, 0),  # black text
-                    thickness
-                )
-                
-                # Draw center
-                cv2.circle(img, (int(cx), int(cy)), 4, color, -1)
-
-                # If there's a mask, blend it
-                if hasattr(obj, "mask") and obj.mask is not None:
-                    apply_mask(img, obj.mask, color=color, alpha=0.4)
         
-        return img
+        color = self.CLASS_COLOR_MAP.get(class_name, (0, 255, 255))  # fallback color
+        
+        x1, y1, x2, y2 = obj.bbox
+        cx, cy = obj.center
+                
+        # Draw bounding box
+        cv2.rectangle(
+            img, 
+            (int(x1), int(y1)), 
+            (int(x2), int(y2)), 
+            color, 
+            thickness
+        )
+        
+        # Label text
+        label = f"{class_name} {obj.confidence:.2f}"
+        (text_w, text_h), baseline = cv2.getTextSize(label, font, font_scale, thickness)
+        
+        # Filled rectangle behind label
+        cv2.rectangle(
+            img, 
+            (int(x1), int(y1) - text_h - baseline),
+            (int(x1) + text_w, int(y1)),
+            color,
+            -1
+        )
+        
+        # Put the label
+        cv2.putText(
+            img, 
+            label,
+            (int(x1), int(y1) - baseline),
+            font,
+            font_scale,
+            (0, 0, 0),  # black text
+            thickness
+        )
+        
+        # Draw center
+        cv2.circle(img, (int(cx), int(cy)), 4, color, -1)
 
+        # If there's a mask, blend it
+        if hasattr(obj, "mask") and obj.mask is not None:
+            apply_mask(img, obj.mask, color=color, alpha=0.4)
+
+        
 
 class YOLODetector(ObjectDetectionModel):
     """
@@ -261,7 +286,7 @@ class YOLODetector(ObjectDetectionModel):
         
         self.classes = classes
 
-    def infer(self, image_path, save=False):
+    def infer(self, img, image_path="", save=False):
         """
         1) Reads the image for shape (H, W).
         2) Runs YOLO inference with conf threshold.
@@ -270,12 +295,20 @@ class YOLODetector(ObjectDetectionModel):
         5) Returns: (boxes, centers, masks, confidences, labels)
         """
         # Read original image
-        orig_img = cv2.imread(image_path)
-        if orig_img is None:
-            raise ValueError(f"Could not read image: {image_path}")
-        H, W = orig_img.shape[:2]
+        if isinstance(img, str):
+            image_path = img
+            img = cv2.imread(img)
+        
+        if image_path == "":
+            save = False
+            
+        if img is None:
+            raise ValueError(f"Could not read image: {img}")
+        
+        
+        H, W = img.shape[:2]
 
-        results = self.model(image_path, conf=self.conf_threshold)
+        results = self.model(img, conf=self.conf_threshold)
 
         # Prepare lists
         boxes = []
@@ -426,7 +459,7 @@ class DeticDectector(ObjectDetectionModel):
                 return class_name
         return None 
     
-    def infer(self, image, save=False):
+    def infer(self, image, image_path="", save=False):
         """
         Returns the standard shape (boxes, centers, masks, confidences, labels).
         Detic might produce masks if you enable them; here we store None for now.
@@ -436,9 +469,10 @@ class DeticDectector(ObjectDetectionModel):
             return [], [], [], [], []
 
         if isinstance(image, str):
+            image_path = image
             image = cv2.imread(image)
             if image is None:
-                print(f"Could not read image: {image}")
+                print(f"Could not read image: {image_path}")
                 return [], [], [], [], []
 
         boxes_out = []

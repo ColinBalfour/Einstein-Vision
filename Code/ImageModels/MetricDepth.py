@@ -73,17 +73,6 @@ class MetricDepthModel:
 
         
         return depth, inverse_depth_normalized, focallength_px
-    
-    @staticmethod
-    def get_depth_image_from_path(image_path, output_dir="outputs/depth"):
-        
-        scene_img = image_path.split('/')[-2:]
-        scene_img = "/".join(scene_img).split(".")[0]
-        
-        im_path = os.path.join(output_dir, f"{scene_img}_depth.npy")
-        depth_image = np.load(im_path)
-        
-        return depth_image
         
     
     def get_translation_at_point(self, x, y, depth_image):
@@ -121,6 +110,25 @@ class MetricDepthModel:
         pointsxyz = pointsxyz.reshape(-1,3)
         
         return pointsxyz
+    
+    @staticmethod
+    def get_depth_image_from_path(image_path, output_dir="outputs/depth"):
+        
+        scene_img = image_path.split('/')[-2:]
+        scene_img = "/".join(scene_img).split(".")[0]
+        
+        im_path = os.path.join(output_dir, f"{scene_img}_depth.npy")
+        depth_image = np.load(im_path)
+        
+        return depth_image
+    
+    @staticmethod
+    def get_RGBD_image(img, depth_img):
+        # take RGB image and depth image and return RGBD image
+        # stack the RGB image and depth image along the last axis
+        rgbd_image = np.dstack((img, depth_img))
+        
+        return rgbd_image
         
         
 if __name__ == '__main__':

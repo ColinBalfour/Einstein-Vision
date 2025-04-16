@@ -19,13 +19,15 @@ class Vehicle(Object):
         "bicycle",
     ]
     
-    def __init__(self, bbox, center, confidence, mask=None, pose=None, vehicle_type='car'):
+    def __init__(self, bbox, center, confidence, mask=None, pose=None, vehicle_type='car', left_taillight=None, right_taillight=None):
         super().__init__(bbox, center, confidence, mask, pose) # Call the parent constructor to initialize bbox, center, mask, confidence, and pose
         
         if vehicle_type not in Vehicle.VEHICLE_TYPES:
             raise ValueError(f"Invalid vehicle type: {vehicle_type}. Must be one of {Vehicle.VEHICLE_TYPES}")
         
         self.vehicle_type = vehicle_type
+        self.left_taillight = left_taillight  # Optional: left taillight object
+        self.right_taillight = right_taillight  # Optional: right taillight object
         
     def __repr__(self):
         # Custom string representation of the Vehicle object

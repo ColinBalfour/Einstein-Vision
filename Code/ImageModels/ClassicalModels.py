@@ -195,4 +195,3 @@ class OCRModel:
             except Exception as e:
                 print(f"OCR Error: {e}")
     
-    

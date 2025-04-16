@@ -7,13 +7,14 @@ import cv2
 import numpy as np
 import sys
 
+from Features.Object import Object
 
-class Taillight:
+class Taillight(Object):
     """
     Class to represent a taillight or brakelight in a vehicle
     """
 
-    def __init__(self, bbox, center, confidence, pose=None, is_brake=False):
+    def __init__(self, bbox, center, confidence, pose=None, direction=None, light_type=None):
         """
         Initialize a taillight instance
 
@@ -26,13 +27,32 @@ class Taillight:
         """
         super().__init__(bbox, center, confidence, pose)
 
-        self.is_brake = is_brake
+        if direction not in ['left', 'right', None]:
+            raise ValueError("Direction must be 'left' or 'right'")
+        self.direction = direction
         
-    def is_brake_light(self):
+        if light_type not in ['brake_light', 'turn_signal', None]:
+            raise ValueError("Type must be 'brake' or 'turn_signal'")
+        
+        self.light_type = light_type
+        
+    def is_brake(self):
         """
-        Check if the taillight is a brake light
+        Check if the taillight is a brakelight
         """
-        return self.is_brake
+        return self.light_type == 'brake_light'
+
+    def is_blink(self):
+        """
+        Check if the taillight is a blinker
+        """
+        return self.light_type == 'turn_signal'
+    
+    def get_direction(self):
+        """
+        Get the direction of the taillight
+        """
+        return self.direction
 
     def to_json(self, image_path=None):
         """
@@ -42,7 +62,8 @@ class Taillight:
         return {
             'name': 'Taillight',  # Name of the object type
             'image_path': image_path,  # Optional: path to the image if needed for reference
-            'is_brake': self.is_brake,  # Include whether the taillight is a brake light
+            'direction': self.direction,  # Direction of the taillight (left or right side of car)
+            'type': self.light_type,  # Type of the taillight (brake or turn)
             'object_data': super().to_json()
         }
 
