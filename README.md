@@ -19,6 +19,8 @@ HumanPose - "yolo11x-pose.pt"
 Vehicle classification - https://github.com/MaryamBoneh/Vehicle-Detection
 yolov11 - https://docs.ultralytics.com/models/yolo11/#performance-metrics
 
+Collison Prediction - https://github.com/Abdelrhman-Amr-98/Pedestrian-Tracking-and-Collision-Prediction/
+
 Data (name P3Data, place in root): https://app.box.com/s/zjys9xcefyqfj2oxkwsm5irgz6g3hp1l
 
 Github repo Traffic Color detection:https://github.com/bhaskrr/traffic-sign-detection-using-yolov11/blob/main/process_video.py
