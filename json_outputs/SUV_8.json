@@ -1,0 +1,26 @@
+{
+    "name": "Vehicle",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_8/frame_000431.png",
+    "vehicle_type": "SUV",
+    "object_data": {
+        "bbox": [
+            773,
+            438,
+            876,
+            509
+        ],
+        "center": [
+            824,
+            474
+        ],
+        "confidence": 0.5284530520439148,
+        "pose": [
+            2.355271403507189,
+            0.8258433824761483,
+            22.262977600097656,
+            0,
+            0,
+            0
+        ]
+    }
+}

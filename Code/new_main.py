@@ -38,7 +38,7 @@ def main():
         cv2.destroyAllWindows()
     
     # Convert the image from BGR to RGB
-    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
     camera_mtx = np.load("P3Data/Calib/calib_mat_front.npy")
     
@@ -123,6 +123,8 @@ def main():
                 leftmost.bbox[2] += x1
                 leftmost.bbox[3] += y1
                 
+                leftmost.center = [(leftmost.bbox[0] + leftmost.bbox[2]) / 2, (leftmost.bbox[1] + leftmost.bbox[3]) / 2]
+                
                 obj.left_taillight = leftmost
                 
             if rightmost:
@@ -133,6 +135,8 @@ def main():
                 rightmost.bbox[1] += y1
                 rightmost.bbox[2] += x1
                 rightmost.bbox[3] += y1
+                
+                rightmost.center = [(rightmost.bbox[0] + rightmost.bbox[2]) / 2, (rightmost.bbox[1] + rightmost.bbox[3]) / 2]
                 
                 obj.right_taillight = rightmost       
     

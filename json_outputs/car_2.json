@@ -1,0 +1,26 @@
+{
+    "name": "Vehicle",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_8/frame_000431.png",
+    "vehicle_type": "car",
+    "object_data": {
+        "bbox": [
+            0,
+            486,
+            138,
+            577
+        ],
+        "center": [
+            69,
+            531
+        ],
+        "confidence": 0.6642974615097046,
+        "pose": [
+            -6.065568319081983,
+            1.1968944717654935,
+            16.497642517089844,
+            0,
+            0,
+            0
+        ]
+    }
+}

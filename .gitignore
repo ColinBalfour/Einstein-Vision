@@ -176,12 +176,15 @@ cython_debug/
 # data
 P3Data*
 outputs/depth
+outputs/optical_flow
 
 # models/repos
 ml-depth-pro
 Detic
 detectron2
 20230814_Lane_Detection_using_Mask_RCNN_An_Instance_Segmentation_Approach
+RAFT
+3D-BoundingBox
 
 # checkpoints
 *.pth

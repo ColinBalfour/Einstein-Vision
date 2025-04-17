@@ -58,15 +58,15 @@ class ObjectDetectionModel:
         "brake_light"
     ]
     
-    # Optional color map (BGR format)
+    # Optional color map (RGB format)
     CLASS_COLOR_MAP = {
-        'car': (0, 255, 0),           # green
-        'person': (255, 0, 0),        # blue
-        'traffic light': (0, 0, 255), # red
-        'stop sign': (255, 255, 0),    # cyan
-        'speed_limit': (255, 255, 255), # white
-        'brake_light': (0, 0, 255), # red
-        'turn_signal': (0, 255, 255), # yellow 
+        'car': (0, 255, 0),            # green
+        'person': (0, 0, 255),         # blue
+        'traffic light': (255, 0, 0),  # red
+        'stop sign': (0, 255, 255),    # cyan
+        'speed_limit': (255, 255, 255),# white
+        'brake': (255, 0, 0),    # red
+        'turn': (255, 255, 0),  # yellow
     }
     
     def __init__(self, model_path='yolov12x.pt', classes=None, conf_threshold=0.65):
