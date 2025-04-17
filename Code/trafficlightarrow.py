@@ -17,21 +17,21 @@ def detect_traffic_light_arrows(image_path):
 
     left_arrow = np.zeros((30, 30), dtype=np.uint8)
     cv2.arrowedLine(left_arrow, (22, 15), (8, 15), 255, 3, tipLength=0.4)  # Thicker line, adjusted position
-    cv2.imshow("Left", left_arrow)
+    # cv2.imshow("Left", left_arrow)
 
     # Right arrow template
     # right_arrow = np.zeros((20, 20), dtype=np.uint8)
     # cv2.arrowedLine(right_arrow, (5, 10), (15, 10), 255, 2, tipLength=0.5)
     right_arrow = np.zeros((30, 30), dtype=np.uint8)
     cv2.arrowedLine(right_arrow, (8, 15), (22, 15), 255, 3, tipLength=0.4)  # Thicker line
-    cv2.imshow("right", right_arrow)
+    # cv2.imshow("right", right_arrow)
 
     # Straight arrow template
     # straight_arrow = np.zeros((20, 20), dtype=np.uint8)
     # cv2.arrowedLine(straight_arrow, (10, 15), (10, 5), 255, 2, tipLength=0.5)
     straight_arrow = np.zeros((30, 30), dtype=np.uint8)
     cv2.arrowedLine(straight_arrow, (15, 22), (15, 8), 255, 3, tipLength=0.4)  # Thicker line
-    cv2.imshow("straight", straight_arrow)
+    # cv2.imshow("straight", straight_arrow)
 
     # Store templates with their labels
     templates = [
@@ -41,7 +41,7 @@ def detect_traffic_light_arrows(image_path):
     ]
 
     # Step 2: Detect traffic lights using YOLO
-    model = YOLO("D:/3. Computer vision/Homeworks/Einstein-Vision/Code/ImageModels/yolo11x.pt")
+    model = YOLO("yolo11x.pt")
     results = model(image)
 
 
@@ -85,22 +85,48 @@ def detect_traffic_light_arrows(image_path):
 
         # Create masks for all possible active colors
         # Green
-        lower_green = np.array([35, 30, 30])  # Lowered saturation and value thresholds
-        upper_green = np.array([90, 255, 255])
+        lower_green = np.array([50, 10, 50])  # Lowered thresholds
+        upper_green = np.array([110, 255, 255])
         green_mask = cv2.inRange(hsv, lower_green, upper_green)
 
         # Blue (for some arrow lights)
-        lower_blue = np.array([90, 30, 30])  # Lowered thresholds
-        upper_blue = np.array([140, 255, 255])
-        blue_mask = cv2.inRange(hsv, lower_blue, upper_blue)
+        # lower_blue = np.array([90, 30, 30])  # Lowered thresholds
+        # upper_blue = np.array([140, 255, 255])
+        # red_mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
-        # Cyan/light blue (common in arrow lights)
-        lower_cyan = np.array([80, 30, 150])  # Specific for bright cyan
-        upper_cyan = np.array([100, 255, 255])
-        cyan_mask = cv2.inRange(hsv, lower_cyan, upper_cyan)
+        # # Cyan/light blue (common in arrow lights)
+        # lower_cyan = np.array([80, 30, 150])  # Specific for bright cyan
+        # upper_cyan = np.array([100, 255, 255])
+        # yellow_mask = cv2.inRange(hsv, lower_cyan, upper_cyan)
+        
+        # Red (for some arrow lights)
+        lower_red1 = np.array([0, 120, 70])
+        upper_red1 = np.array([10, 255, 255])
+        lower_red2 = np.array([160, 120, 70])
+        upper_red2 = np.array([180, 255, 255])
+        red_mask = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
+        
+        # # Yellow (for some arrow lights)
+        lower_yellow = np.array([12, 85, 100])  # Lowered thresholds
+        upper_yellow = np.array([32, 255, 255])
+        yellow_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+        
+        # if we see too much yellow, its probably traffic light itself
+        if cv2.countNonZero(yellow_mask) > .1 * cv2.countNonZero(np.ones_like(yellow_mask)):
+            yellow_mask = np.zeros_like(yellow_mask)
+        
+        
+        # find mask with max area (actual light color)
+        print(cv2.countNonZero(green_mask), cv2.countNonZero(red_mask), cv2.countNonZero(yellow_mask))
+        light_color = np.argmax([cv2.countNonZero(green_mask), cv2.countNonZero(red_mask), cv2.countNonZero(yellow_mask)])
+        light_color = ['green', 'red', 'yellow'][light_color]
+        
+        cv2.imwrite(f"outputs/green_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(green_mask, cv2.COLOR_GRAY2BGR)]))
+        cv2.imwrite(f"outputs/red_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(red_mask, cv2.COLOR_GRAY2BGR)]))
+        cv2.imwrite(f"outputs/yellow_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(yellow_mask, cv2.COLOR_GRAY2BGR)]))
 
         # Combine all color masks
-        color_mask = cv2.bitwise_or(cv2.bitwise_or(green_mask, blue_mask), cyan_mask)
+        color_mask = cv2.bitwise_or(cv2.bitwise_or(green_mask, red_mask), yellow_mask)
 
         # Apply morphological operations
         kernel = np.ones((2, 2), np.uint8)
@@ -220,18 +246,20 @@ def detect_traffic_light_arrows(image_path):
         label = f"{arrow_type}: {score:.2f}"
         cv2.putText(result_image, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-    return result_image, regular_lights, arrow_lights
+    return result_image, regular_lights, arrow_lights, light_color
 
 
 # Example usage
 if __name__ == "__main__":
-    image_path = "D:/3. Computer vision/Homeworks/Einstein-Vision/P3Data/ExtractedFrames/Undist/scene_6/frame_000116.png"
-    result, regular_lights, arrow_lights = detect_traffic_light_arrows(image_path)
+    image_path = "P3Data/ExtractedFrames/Undist/scene_6/frame_000116.png"
+    # image_path = "P3Data/ExtractedFrames/Undist/scene_4/frame_000034.png"
+    result, regular_lights, arrow_lights, light_color = detect_traffic_light_arrows(image_path)
 
-    cv2.imshow("Traffic Light Arrows", result)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Traffic Light Arrows", result)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
+    print(light_color)
     print(f"Detected {len(arrow_lights)} arrow traffic lights and {len(regular_lights)} regular traffic lights")
     for i, (_, _, _, _, arrow_type, score) in enumerate(arrow_lights):
         print(f"Arrow {i + 1}: {arrow_type} (Score: {score:.2f})")

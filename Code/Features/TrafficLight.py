@@ -11,10 +11,15 @@ from Features.Object import Object
 
 class TrafficLight(Object):
 
-    def __init__(self, bbox, center, confidence, pose=None, color=None):
+    def __init__(self, bbox, center, confidence, pose=None, color=None, arrow_direction=None):
         super().__init__(bbox, center, confidence, pose)  # Call the parent constructor to initialize bbox, center, confidence, and pose
         
         self.color = color  # Color of the traffic light (e.g., 'red', 'green', 'yellow'). This can be set later if needed.
+        
+        if not arrow_direction in ['left', 'right', 'straight', None]:
+            raise ValueError("Invalid arrow direction. Must be 'left', 'right', 'straight', or None.")
+        
+        self.arrow_direction = arrow_direction  # Direction of the arrow (if applicable). This can be set later if needed.
 
     def __repr__(self):
         return f"TrafficLight(bbox={self.bbox}, center={self.center}, confidence={self.confidence})"
@@ -31,7 +36,7 @@ class TrafficLight(Object):
                  Returns None if not set.
         """
         return self.color
-    
+        
     def to_json(self, image_path=None):
         """
         Convert the TrafficLight object to a JSON-compatible dictionary format.
@@ -41,6 +46,7 @@ class TrafficLight(Object):
             'name': 'TrafficLight',  # Name of the object type
             'image_path': image_path,  # Optional: path to the image if needed for reference
             'color': self.color,  # Include the color of the traffic light if set
+            'arrow_direction': self.arrow_direction,  # Include the arrow direction if set
             'object_data': super().to_json()
         }
 

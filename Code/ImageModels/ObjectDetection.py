@@ -146,7 +146,7 @@ class ObjectDetectionModel:
                     confidence=conf,
                     sign_type='SPEED_LIMIT'
                 )
-            elif class_name in ['brake_light', 'turn_signal']:
+            elif class_name in ['brake_light', 'turn_signal', 'taillight']:
                 obj = Taillight(
                     bbox=[x1, y1, x2, y2],
                     center=[center_x, center_y],

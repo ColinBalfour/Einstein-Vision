@@ -15,7 +15,18 @@ from ImageModels.ClassicalModels import *
 
 def main():
     
-    image_path = "P3Data/ExtractedFrames/Undist/scene_8/frame_000431.png"
+    key_images = {
+        "cars_with_bike": "P3Data/ExtractedFrames/Undist/scene_8/frame_000431.png",
+        "truck_cars_highway": "P3Data/ExtractedFrames/Undist/scene_1/frame_000256.png",
+        "traffic_light": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
+        "traffic_cones_brake_light": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+        "traffic_light2": "P3Data/ExtractedFrames/Undist/scene_7/frame_000200.png",
+        "pedestrian_stop_sign": "P3Data/ExtractedFrames/Undist/scene_8/frame_000200.png",
+        "speed_limit": "P3Data/ExtractedFrames/Undist/scene_9/frame_000381.png",
+        "motorcycle": "P3Data/ExtractedFrames/Undist/scene_13/frame_000244.png",
+    }
+    
+    image_path = key_images["traffic_light"]
     show = False
     
     
@@ -79,8 +90,9 @@ def main():
     )
     tailight_model = DeticDectector(
         vocabulary={
-            'brake_light': ['brake_light', 'car_brake_light', 'car_stopping_light', 'rear_light', 'red_light'],
-            'turn_signal': ['turn_signal', 'indicator_light', 'blinker_light'],
+            'taillight': ['taillight_off', 'car_taillight_off', 'car_rear_light_off', 'rear_light_off', 'brake_light_off', 'turn_signal_off'],
+            'brake_light': ['brake_light_on', 'car_brake_light_on', 'car_stopping_light_on', 'rear_light_on', 'red_light_on', 'braking_light'],
+            'turn_signal': ['turn_signal_on'],
         }
     )
     vehicle_results = vehicle_model.get_outputs(img=image_path)
@@ -114,14 +126,25 @@ def main():
                     if rightmost is None or light_obj.bbox[0] > rightmost.bbox[0]:
                         rightmost = light_obj
             
+            if rightmost == leftmost and rightmost is not None:
+                # set side closest to edge of bbox as the direction
+                if rightmost.bbox[0] < (obj.bbox[0] + obj.bbox[2]) / 2:
+                    rightmost = None
+                else:
+                    leftmost = None
+            
             if leftmost:
                 # Set the direction based on the leftmost taillight
                 leftmost.direction = 'left'
                 # Update bbox coordinates to the original image
+                print('conf', leftmost.confidence)
+                print('before bbox:', leftmost.bbox)
+                print('original bbox:', obj.bbox)
                 leftmost.bbox[0] += x1
                 leftmost.bbox[1] += y1
                 leftmost.bbox[2] += x1
                 leftmost.bbox[3] += y1
+                print('new bbox:', leftmost.bbox)
                 
                 leftmost.center = [(leftmost.bbox[0] + leftmost.bbox[2]) / 2, (leftmost.bbox[1] + leftmost.bbox[3]) / 2]
                 
@@ -131,10 +154,14 @@ def main():
                 # Set the direction based on the rightmost taillight
                 rightmost.direction = 'right'
                 # Update bbox coordinates to the original image
+                print('conf', rightmost.confidence)
+                print('before bbox:', rightmost.bbox)
+                print('original bbox:', obj.bbox)
                 rightmost.bbox[0] += x1
                 rightmost.bbox[1] += y1
                 rightmost.bbox[2] += x1
                 rightmost.bbox[3] += y1
+                print('new bbox:', rightmost.bbox)
                 
                 rightmost.center = [(rightmost.bbox[0] + rightmost.bbox[2]) / 2, (rightmost.bbox[1] + rightmost.bbox[3]) / 2]
                 

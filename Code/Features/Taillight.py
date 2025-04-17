@@ -31,7 +31,7 @@ class Taillight(Object):
             raise ValueError("Direction must be 'left' or 'right'")
         self.direction = direction
         
-        if light_type not in ['brake_light', 'turn_signal', None]:
+        if light_type not in ['brake_light', 'turn_signal', 'taillight', None]:
             raise ValueError("Type must be 'brake' or 'turn_signal'")
         
         self.light_type = light_type

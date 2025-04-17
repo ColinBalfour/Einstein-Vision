@@ -1,23 +1,23 @@
 {
     "name": "Vehicle",
-    "image_path": "P3Data/ExtractedFrames/Undist/scene_8/frame_000431.png",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
     "vehicle_type": "car",
     "object_data": {
         "bbox": [
-            132,
-            490,
-            283,
-            560
+            71,
+            440,
+            191,
+            509
         ],
         "center": [
-            208,
-            525
+            131,
+            474
         ],
-        "confidence": 0.6550671458244324,
+        "confidence": 0.4744977056980133,
         "pose": [
-            -5.200547711691974,
-            1.2759082583094647,
-            18.540496826171875,
+            -4.668679604421511,
+            0.5267436177682697,
+            14.199885368347168,
             0,
             0,
             0
