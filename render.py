@@ -1,7 +1,12 @@
 import bpy
 import json
 import os
+import sys
 import math
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(script_dir)
+from traffic_light_render import highlight_light_color, add_direction_arrow
 
 # Enable GPU rendering in Cycles
 prefs = bpy.context.preferences.addons['cycles'].preferences
@@ -171,9 +176,20 @@ def import_objects_from_json():
             asset_name = data['name']
             if asset_name == "Vehicle":
                 asset_name = data.get("vehicle_type", "car")
-            
+                
             obj_asset = object_assets[asset_name]
             obj_name = object_names[asset_name]
+            
+            # ─── traffic‑light specific tweaks ────────────────────────────────
+            if asset_name == "TrafficLight":
+                highlight_light_color(
+                    appended_obj,
+                    data.get("color", "red")       # default red
+                )
+                arrow_dir = data.get("arrow")      # may be None
+                if arrow_dir and arrow_dir.lower() is not None:
+                    add_direction_arrow(appended_obj, arrow_dir)
+            # ──────────────────────────────────────────────────────────────────
             
             appended_obj = append_object(obj_asset, obj_name)
             if not appended_obj:

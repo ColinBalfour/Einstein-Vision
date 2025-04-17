@@ -196,7 +196,7 @@ class OCRModel:
                 print(f"OCR Error: {e}")
     
     
-def detect_traffic_light_arrows(image, obj):
+def detect_traffic_light_arrows(image, obj, imtype='bgr'):
     # Load image
     if isinstance(image, str):
         image_path = image
@@ -205,6 +205,9 @@ def detect_traffic_light_arrows(image, obj):
     if image is None:
         print("Error: Could not load image")
         return None
+    
+    if imtype == 'rgb':
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     # Step 1: Create synthetic arrow templates
     # Left arrow template
@@ -238,15 +241,15 @@ def detect_traffic_light_arrows(image, obj):
 
     # Step 3: Process each traffic light for arrows
 
-    x1, y1, x2, y2 = obj.bbox.astype(int)
+    x1, y1, x2, y2 = obj.bbox
     
     
     # Add padding to capture the whole traffic light
     padding = 5
-    x1 = max(0, x1 - padding)
-    y1 = max(0, y1 - padding)
-    x2 = min(image.shape[1], x2 + padding)
-    y2 = min(image.shape[0], y2 + padding)
+    x1 = int(max(0, x1 - padding))
+    y1 = int(max(0, y1 - padding))
+    x2 = int(min(image.shape[1], x2 + padding))
+    y2 = int(min(image.shape[0], y2 + padding))
 
     # Crop the traffic light region
     traffic_light_img = image[y1:y2, x1:x2]
@@ -296,9 +299,9 @@ def detect_traffic_light_arrows(image, obj):
     light_color = np.argmax([cv2.countNonZero(green_mask), cv2.countNonZero(red_mask), cv2.countNonZero(yellow_mask)])
     light_color = ['green', 'red', 'yellow'][light_color]
     
-    cv2.imwrite(f"outputs/green_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(green_mask, cv2.COLOR_GRAY2BGR)]))
-    cv2.imwrite(f"outputs/red_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(red_mask, cv2.COLOR_GRAY2BGR)]))
-    cv2.imwrite(f"outputs/yellow_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(yellow_mask, cv2.COLOR_GRAY2BGR)]))
+    # cv2.imwrite(f"outputs/green_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(green_mask, cv2.COLOR_GRAY2BGR)]))
+    # cv2.imwrite(f"outputs/red_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(red_mask, cv2.COLOR_GRAY2BGR)]))
+    # cv2.imwrite(f"outputs/yellow_mask_{i}.png", np.hstack([traffic_light_img, cv2.cvtColor(yellow_mask, cv2.COLOR_GRAY2BGR)]))
 
     # Combine all color masks
     color_mask = cv2.bitwise_or(cv2.bitwise_or(green_mask, red_mask), yellow_mask)

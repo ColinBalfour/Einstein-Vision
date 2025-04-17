@@ -76,6 +76,17 @@ def main():
     # Run object detection on the same image
     results = object_model.get_outputs(img=image_path) # dictionary of Objects
     
+    for name, detected_objects in results.items():
+        if name == 'traffic light':
+            for obj in detected_objects:
+                # Check if the object is a traffic light
+                if isinstance(obj, TrafficLight):
+                    # Set the arrow direction based on the detected object
+                    color, arrow_direction = detect_traffic_light_arrows(img.copy(), obj, 'rgb')
+                    obj.color = color
+                    obj.arrow_direction = arrow_direction
+                    print(f"Detected traffic light with color: {color} and arrow direction: {arrow_direction}")
+    
     
     vehicle_model = DeticDectector(
         vocabulary={
@@ -108,7 +119,7 @@ def main():
             x2 = min(img.shape[1], x2 + padding)
             y2 = min(img.shape[0], y2 + padding)
             
-            print(x1, y1, x2, y2)
+            # print(x1, y1, x2, y2)
             # Crop the image to the detected vehicle bounding box
             cropped_img = img.copy()[y1:y2, x1:x2]
             cv2.imwrite(f"outputs/vehicles_debug/cropped_vehicle_{i}.png", cropped_img)

@@ -252,7 +252,7 @@ def detect_traffic_light_arrows(image_path):
 # Example usage
 if __name__ == "__main__":
     image_path = "P3Data/ExtractedFrames/Undist/scene_6/frame_000116.png"
-    # image_path = "P3Data/ExtractedFrames/Undist/scene_4/frame_000034.png"
+    image_path = "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png"
     result, regular_lights, arrow_lights, light_color = detect_traffic_light_arrows(image_path)
 
     # cv2.imshow("Traffic Light Arrows", result)

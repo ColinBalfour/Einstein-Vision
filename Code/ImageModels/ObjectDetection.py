@@ -62,11 +62,15 @@ class ObjectDetectionModel:
     CLASS_COLOR_MAP = {
         'car': (0, 255, 0),            # green
         'person': (0, 0, 255),         # blue
-        'traffic light': (255, 0, 0),  # red
+        'traffic light': (255, 255, 255),  # white
         'stop sign': (0, 255, 255),    # cyan
         'speed_limit': (255, 255, 255),# white
         'brake': (255, 0, 0),    # red
         'turn': (255, 255, 0),  # yellow
+        
+        'green': (0, 255, 0),  # green
+        'yellow': (0, 255, 255),  # yellow
+        'red': (0, 0, 255),  # red
     }
     
     def __init__(self, model_path='yolov12x.pt', classes=None, conf_threshold=0.65):
@@ -185,13 +189,18 @@ class ObjectDetectionModel:
             if detections[0].__class__.__name__ == 'Vehicle':
                 for obj in detections:
                     if obj.left_taillight:
-                        print(f"Left taillight detected: {obj.left_taillight}")
+                        # print(f"Left taillight detected: {obj.left_taillight}")
                         self.draw_viz(img, obj.left_taillight, obj.left_taillight.light_type.split('_')[0])
                     if obj.right_taillight:
-                        print(f"Right taillight detected: {obj.right_taillight}")
+                        # print(f"Right taillight detected: {obj.right_taillight}")
                         self.draw_viz(img, obj.right_taillight, obj.left_taillight.light_type.split('_')[0])
             
             for obj in detections:
+                
+                if class_name == 'traffic light' and obj.color:
+                    print(f"Traffic light color detected: {obj.color}")
+                    class_name = obj.color
+                
                 self.draw_viz(img, obj, class_name)
         
         return img
