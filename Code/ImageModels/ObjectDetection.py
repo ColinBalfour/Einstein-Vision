@@ -117,7 +117,7 @@ class ObjectDetectionModel:
                 print(f"Class '{class_name}' is not in the specified classes. Skipping.")
                 continue
 
-            if class_name in ['car', 'truck', 'SUV', 'bicycle', 'pickup']:
+            if class_name in ['car', 'truck', 'SUV', 'bicycle', 'pickup', 'motorcycle']:
                 obj = Vehicle(
                     bbox=[x1, y1, x2, y2],
                     center=[center_x, center_y],

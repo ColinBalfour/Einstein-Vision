@@ -40,6 +40,7 @@ object_assets = {
     'SUV': os.path.join(base_path, "P3Data/Assets/Vehicles/SUV.blend"),
     'bicycle': os.path.join(base_path, "P3Data/Assets/Vehicles/Bicycle.blend"),
     'pickup': os.path.join(base_path, "P3Data/Assets/Vehicles/PickupTruck.blend"),
+    'motorcycle': os.path.join(base_path, "P3Data/Assets/Vehicles/Motorcycle.blend"),
     'TrafficLight': os.path.join(base_path, "P3Data/Assets/TrafficSignal.blend"),
     'Pedestrian': os.path.join(base_path, "P3Data/Assets/Pedestrain.blend"),
     'RoadSign': os.path.join(base_path, "P3Data/Assets/StopSign.blend"),
@@ -52,6 +53,7 @@ object_names = {
     'bicycle': "roadbike 2.0.1",
     'TrafficLight': "Traffic_signal1",
     'pickup': "PickupTruck",
+    'motorcycle': "Bike", # B_wheel
     'Pedestrian': "BaseMesh_Man_Simple",
     'RoadSign': "StopSign_Geo",
 }
@@ -62,6 +64,7 @@ object_scales = {
     'SUV': 1,
     'bicycle': 1.5 / 3.91,
     'pickup': 5 / 9.47,
+    'motorcycle': 2.5 / 8.78,
     'TrafficLight': .4,
     'Pedestrian': 1.75 / 6.3432,
     'RoadSign': 2.1336 / 6.7066,
@@ -73,6 +76,7 @@ object_rotations = {
     'SUV': (0, 0, 0),
     'bicycle': (90, 0, 0),
     'pickup': (90, 0, 90),
+    'motorcycle': (90, 0, 90),
     'TrafficLight': (90, 0, -90),
     'Pedestrian': (90, 0, 0),
     'RoadSign': (90, 0, -90),
@@ -84,6 +88,7 @@ object_offsets = {
     'SUV': (0, 0, 0),
     'bicycle': (0, 0, 0),
     'pickup': (0, 0, 1.4),
+    'motorcycle': (0, 0, 0),
     'TrafficLight': (0, 0, -0),
     'Pedestrian': (0, 0, 0),
     'RoadSign': (0, 0, -0),
@@ -125,6 +130,9 @@ def setup_scene():
 def append_object(blend_file, obj_name):
     existing_objs = set(bpy.data.objects)
     directory = blend_file + "/Object/"
+    
+    if obj_name == "Bike":
+        directory = blend_file + "/Collection/"
     
     filepath = directory + obj_name
     print(f"[DEBUG] Appending object '{obj_name}' from {filepath}")

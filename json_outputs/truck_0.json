@@ -1,0 +1,26 @@
+{
+    "name": "Vehicle",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_13/frame_000244.png",
+    "vehicle_type": "truck",
+    "object_data": {
+        "bbox": [
+            553,
+            442,
+            590,
+            462
+        ],
+        "center": [
+            571,
+            452
+        ],
+        "confidence": 0.68678218126297,
+        "pose": [
+            -1.8506643417793955,
+            0.8196008988267593,
+            35.0096321105957,
+            0,
+            0,
+            0
+        ]
+    }
+}

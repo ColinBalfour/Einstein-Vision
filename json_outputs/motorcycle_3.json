@@ -1,0 +1,26 @@
+{
+    "name": "Vehicle",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_13/frame_000244.png",
+    "vehicle_type": "motorcycle",
+    "object_data": {
+        "bbox": [
+            381,
+            446,
+            430,
+            519
+        ],
+        "center": [
+            406,
+            483
+        ],
+        "confidence": 0.7675861120223999,
+        "pose": [
+            -1.8895161576694597,
+            0.5160112727921852,
+            12.086554527282715,
+            0,
+            0,
+            0
+        ]
+    }
+}
