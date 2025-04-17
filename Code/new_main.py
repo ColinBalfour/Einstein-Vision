@@ -26,7 +26,7 @@ def main():
         "motorcycle": "P3Data/ExtractedFrames/Undist/scene_13/frame_000244.png",
     }
     
-    image_path = key_images["traffic_light"]
+    image_path = key_images["traffic_light2"]
     show = False
     
     

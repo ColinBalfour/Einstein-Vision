@@ -39,6 +39,7 @@ object_assets = {
     'truck': os.path.join(base_path, "P3Data/Assets/Vehicles/Truck.blend"),
     'SUV': os.path.join(base_path, "P3Data/Assets/Vehicles/SUV.blend"),
     'bicycle': os.path.join(base_path, "P3Data/Assets/Vehicles/Bicycle.blend"),
+    'pickup': os.path.join(base_path, "P3Data/Assets/Vehicles/PickupTruck.blend"),
     'TrafficLight': os.path.join(base_path, "P3Data/Assets/TrafficSignal.blend"),
     'Pedestrian': os.path.join(base_path, "P3Data/Assets/Pedestrain.blend"),
     'RoadSign': os.path.join(base_path, "P3Data/Assets/StopSign.blend"),
@@ -50,6 +51,7 @@ object_names = {
     'SUV': "Jeep_3_",
     'bicycle': "roadbike 2.0.1",
     'TrafficLight': "Traffic_signal1",
+    'pickup': "PickupTruck",
     'Pedestrian': "BaseMesh_Man_Simple",
     'RoadSign': "StopSign_Geo",
 }
@@ -59,6 +61,7 @@ object_scales = {
     'truck': 6 / 8.25,
     'SUV': 1,
     'bicycle': 1.5 / 3.91,
+    'pickup': 5 / 9.47,
     'TrafficLight': .4,
     'Pedestrian': 1.75 / 6.3432,
     'RoadSign': 2.1336 / 6.7066,
@@ -69,9 +72,21 @@ object_rotations = {
     'truck': (0, 0, 0),
     'SUV': (0, 0, 0),
     'bicycle': (90, 0, 0),
+    'pickup': (90, 0, 90),
     'TrafficLight': (90, 0, -90),
     'Pedestrian': (90, 0, 0),
     'RoadSign': (90, 0, -90),
+}
+
+object_offsets = {
+    'car': (0, 0, 0),
+    'truck': (0, 0, 0),
+    'SUV': (0, 0, 0),
+    'bicycle': (0, 0, 0),
+    'pickup': (0, 0, 1.4),
+    'TrafficLight': (0, 0, -0),
+    'Pedestrian': (0, 0, 0),
+    'RoadSign': (0, 0, -0),
 }
 
 # ------------------------------------------------------------------------------
@@ -180,20 +195,10 @@ def import_objects_from_json():
             obj_asset = object_assets[asset_name]
             obj_name = object_names[asset_name]
             
-            # ─── traffic‑light specific tweaks ────────────────────────────────
-            if asset_name == "TrafficLight":
-                highlight_light_color(
-                    appended_obj,
-                    data.get("color", "red")       # default red
-                )
-                arrow_dir = data.get("arrow")      # may be None
-                if arrow_dir and arrow_dir.lower() is not None:
-                    add_direction_arrow(appended_obj, arrow_dir)
-            # ──────────────────────────────────────────────────────────────────
-            
             appended_obj = append_object(obj_asset, obj_name)
             if not appended_obj:
                 continue
+            
             bpy.context.view_layer.objects.active = appended_obj
             scale_factor = object_scales[asset_name]
             bpy.ops.transform.resize(value=(scale_factor, scale_factor, scale_factor))
@@ -207,10 +212,26 @@ def import_objects_from_json():
                 roll += math.radians(pose[3])
                 pitch += math.radians(pose[4])
                 yaw += math.radians(pose[5])
-            appended_obj.location = (x, y, z)
+                
+            x_off, y_off, z_off = object_offsets[asset_name]    
+            appended_obj.location = (x + x_off, y + y_off, z + z_off)    
+            
             appended_obj.rotation_euler = (roll, pitch, yaw)
             appended_obj.hide_viewport = False
             appended_obj.hide_render = False
+            
+            # ─── traffic‑light specific tweaks ────────────────────────────────
+            if asset_name == "TrafficLight":
+                highlight_light_color(
+                    appended_obj,
+                    data.get("color", "red")       # default red
+                )
+                arrow_dir = data.get("arrow")      # may be None
+                if arrow_dir and arrow_dir.lower() is not None:
+                    add_direction_arrow(appended_obj, arrow_dir)
+            # ──────────────────────────────────────────────────────────────────
+            
+            
             print(f"[OK] Placed '{asset_name}' from {file_name} at ({x:.2f}, {y:.2f}, {z:.2f})")
 
 def import_lanes_from_json():

@@ -17,6 +17,7 @@ class Vehicle(Object):
         "SUV",
         "truck",
         "bicycle",
+        "pickup"
     ]
     
     def __init__(self, bbox, center, confidence, mask=None, pose=None, vehicle_type='car', left_taillight=None, right_taillight=None):
