@@ -23,7 +23,7 @@ def _rear_axis_vec(obj):
     for a in axes:
         corner_world = obj.matrix_world @ (a * obj.dimensions / 2)
         dist = (corner_world - obj.location).length
-        if dist < max_d:
+        if dist > max_d:
             max_d, rear = dist, a
     return rear.normalized()
 
