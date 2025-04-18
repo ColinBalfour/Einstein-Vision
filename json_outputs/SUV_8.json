@@ -1,0 +1,66 @@
+{
+    "name": "Vehicle",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+    "vehicle_type": "SUV",
+    "left_taillight": {
+        "name": "Taillight",
+        "image_path": null,
+        "direction": "left",
+        "type": "taillight",
+        "object_data": {
+            "bbox": [
+                664,
+                462,
+                675,
+                474
+            ],
+            "center": [
+                669.5,
+                468.0
+            ],
+            "confidence": 0.4292553663253784,
+            "pose": null
+        }
+    },
+    "right_taillight": {
+        "name": "Taillight",
+        "image_path": null,
+        "direction": "right",
+        "type": "brake_light",
+        "object_data": {
+            "bbox": [
+                698,
+                455,
+                713,
+                482
+            ],
+            "center": [
+                705.5,
+                468.5
+            ],
+            "confidence": 0.3589898645877838,
+            "pose": null
+        }
+    },
+    "object_data": {
+        "bbox": [
+            563,
+            397,
+            719,
+            552
+        ],
+        "center": [
+            641,
+            475
+        ],
+        "confidence": 0.6430773735046387,
+        "pose": [
+            -0.09622076290404119,
+            0.4048133124559802,
+            10.73293399810791,
+            0,
+            0,
+            0
+        ]
+    }
+}

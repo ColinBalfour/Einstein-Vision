@@ -406,3 +406,61 @@ def detect_traffic_light_arrows(image, obj, imtype='bgr'):
         return light_color, best_match_type if best_match_type else None
     else:
         return light_color, None
+    
+def detect_brake_and_indicator_lights(img, obj, imtype='bgr', min_area=5, max_area=500):
+    
+    if isinstance(img, str):
+        img_path = img
+        img = cv2.imread(img_path)
+        
+    if img is None:
+        print("Error: Could not load image")
+        return None
+    
+    if imtype == 'rgb':
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    
+    x1, y1, x2, y2 = obj.bbox
+    # Add padding to capture the whole vehicle
+    padding = 5
+    x1 = int(max(0, x1 - padding))
+    y1 = int(max(0, y1 - padding))
+    x2 = int(min(img.shape[1], x2 + padding))
+    y2 = int(min(img.shape[0], y2 + padding))
+    
+    light_crop = img[y1:y2, x1:x2]
+    
+    hsv = cv2.cvtColor(light_crop, cv2.COLOR_BGR2HSV)
+
+    # Brake lights: RED
+    lower_red1 = np.array([0, 50, 80])
+    upper_red1 = np.array([25, 255, 255])
+    lower_red2 = np.array([150, 50, 80])
+    upper_red2 = np.array([180, 255, 255])
+    mask_red = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
+
+    # Indicator lights: YELLOW
+    lower_yellow = np.array([15, 70, 180])
+    upper_yellow = np.array([35, 255, 255])
+    mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+
+    # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    # mask_red = cv2.morphologyEx(mask_red, cv2.MORPH_OPEN, kernel)
+    # mask_yellow = cv2.morphologyEx(mask_yellow, cv2.MORPH_OPEN, kernel)
+    
+    if cv2.countNonZero(mask_yellow) > .02 * cv2.countNonZero(np.ones_like(mask_yellow)):
+        return 'turn_signal'
+        
+    if cv2.countNonZero(mask_red) > .02 * cv2.countNonZero(np.ones_like(mask_red)):
+        return 'brake_light'
+
+    # light_boxes = []
+    for mask, color in [(mask_red, 'brake_light'), (mask_yellow, 'turn)signal')]:
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if min_area < area < max_area:
+                # x, y, w, h = cv2.boundingRect(cnt)
+                return color
+
+    return 'taillight'

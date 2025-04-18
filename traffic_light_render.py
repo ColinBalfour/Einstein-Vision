@@ -1,20 +1,11 @@
 import bpy
 import math
 
+from blender_utils_setup import _ensure_emission
+
 # ─────────────────────────────────────────────────────────────────────────────
 # THREE‑DISC TRAFFIC‑LIGHT RIG
 # ─────────────────────────────────────────────────────────────────────────────
-def _ensure_emission(mat, rgb, strength):
-    """Replace all nodes with a single emission of colour *rgb*."""
-    mat.use_nodes = True
-    nodes = mat.node_tree.nodes
-    links = mat.node_tree.links
-    nodes.clear()
-    out   = nodes.new("ShaderNodeOutputMaterial")
-    emiss = nodes.new("ShaderNodeEmission")
-    emiss.inputs["Color"].default_value     = (*rgb, 1.0)
-    emiss.inputs["Strength"].default_value  = strength
-    links.new(emiss.outputs["Emission"], out.inputs["Surface"])
 
 def _mk_disc(parent, tag, z_offset):
     """Parent a thin cylinder that acts as one lamp disc."""

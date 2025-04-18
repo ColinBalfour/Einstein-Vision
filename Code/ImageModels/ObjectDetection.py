@@ -68,6 +68,7 @@ class ObjectDetectionModel:
         'speed_limit': (255, 255, 255),# white
         'brake': (255, 0, 0),    # red
         'turn': (255, 255, 0),  # yellow
+        'taillight': (255, 255, 255),  # white
         
         'green': (0, 255, 0),  # green
         'yellow': (0, 255, 255),  # yellow

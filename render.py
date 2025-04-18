@@ -7,6 +7,7 @@ import math
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(script_dir)
 from traffic_light_render import highlight_light_color, add_direction_arrow
+from brake_light_render import set_brake_light, set_turn_signal
 
 # Enable GPU rendering in Cycles
 prefs = bpy.context.preferences.addons['cycles'].preferences
@@ -33,6 +34,10 @@ print("STARTING")
 base_path = os.path.dirname(os.path.abspath(__file__))
 # base_path = os.path.expanduser("~/Documents/RBE549/Einstein-Vision")
 json_folder = os.path.join(base_path, "json_outputs")
+
+categories = {
+    "Vehicle": ["car", "truck", "SUV", "bicycle", "pickup", "motorcycle"],
+}
 
 object_assets = {
     'car': os.path.join(base_path, "P3Data/Assets/Vehicles/SedanAndHatchback.blend"),
@@ -159,23 +164,43 @@ def create_lane_curve(world_points, lane_name="Lane"):
     curve_data.bevel_depth = 0.05
     return lane_obj
 
-def setup_camera(location=(0, 0, 0), rotation=(0, 0, 0), target_obj=None):
-    if bpy.context.scene.camera:
-        camera = bpy.context.scene.camera
-    else:
+def setup_camera(location=(0, 0, 0),
+                 rotation=(0, 0, 0),
+                 target_obj=None,
+                 focal_px=1500):           # <‑‑ new kwarg
+    """
+    • focal_px is the desired focal length expressed in image pixels.
+      Default = 1500 px for a 1920 px‑wide render.
+    """
+    # ── create / reuse camera ────────────────────────────────────────────────
+    cam = bpy.context.scene.camera
+    if cam is None:
         bpy.ops.object.camera_add()
-        camera = bpy.context.object
-        bpy.context.scene.camera = camera
-    camera.location = location
+        cam = bpy.context.object
+        bpy.context.scene.camera = cam
+
+    cam.location = location
     if target_obj:
-        constraint = camera.constraints.new(type='TRACK_TO')
-        constraint.target = target_obj
-        constraint.track_axis = 'TRACK_NEGATIVE_Z'
-        constraint.up_axis = 'UP_Y'
+        trk = cam.constraints.new(type='TRACK_TO')
+        trk.target = target_obj
+        trk.track_axis, trk.up_axis = 'TRACK_NEGATIVE_Z', 'UP_Y'
         bpy.context.view_layer.update()
     else:
-        camera.rotation_euler = rotation
-    return camera
+        cam.rotation_euler = rotation
+
+    # ── convert pixel focal length → millimetres ────────────────────────────
+    scene    = bpy.context.scene
+    img_w_px = scene.render.resolution_x
+    sensor_w = cam.data.sensor_width      # default 36 mm
+    cam.data.sensor_fit = 'HORIZONTAL'    # use horizontal fit for the formula
+    cam.data.lens_unit  = 'MILLIMETERS'
+ 
+    cam.data.lens = focal_px * sensor_w / img_w_px
+    print(f"[CAM]  Focal length set to {cam.data.lens:.3f} mm "
+          f"≈ {focal_px}px on {img_w_px}px width")
+
+    return cam
+
 
 # ------------------------------------------------------------------------------
 # Import JSON Objects
@@ -238,6 +263,39 @@ def import_objects_from_json():
                 if arrow_dir and arrow_dir.lower() is not None:
                     add_direction_arrow(appended_obj, arrow_dir)
             # ──────────────────────────────────────────────────────────────────
+            
+            # ─── vehicle light controls ────────────────────────────────────────────────
+            if asset_name in categories["Vehicle"]:
+                left_taillight = data.get("left_taillight", {})
+                right_taillight = data.get("right_taillight", {})
+                
+                if not left_taillight:
+                    left_taillight = {}
+                if not right_taillight:
+                    right_taillight = {}
+                
+                braking = left_taillight.get("type", 'taillight') == "brake_light" or right_taillight.get("type", 'taillight') == "brake_light"          
+                
+                left_turn = left_taillight.get("type", 'taillight') == "turn_signal" or right_taillight.get("type", 'taillight') == "turn_signal"
+                right_turn = left_taillight.get("type", 'taillight') == "turn_signal" or right_taillight.get("type", 'taillight') == "turn_signal"
+                
+                l_dir = 'left' if left_turn else None
+                
+                if l_dir == 'left' and right_turn:
+                    l_dir = 'hazard'
+                    
+                l_dir = 'right' if right_turn else l_dir
+                
+                
+                set_brake_light(
+                    appended_obj,
+                    braking
+                )
+                set_turn_signal(
+                    appended_obj,
+                    l_dir     # left, right, hazard, or None
+                )
+            # ───────────────────────────────────────────────────────────────────────────
             
             
             print(f"[OK] Placed '{asset_name}' from {file_name} at ({x:.2f}, {y:.2f}, {z:.2f})")
