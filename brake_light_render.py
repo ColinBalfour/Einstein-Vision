@@ -1,119 +1,88 @@
-import bpy
-import math
-
-import mathutils
-
-from blender_utils_setup import _ensure_emission
-
+import bpy, math
+from blender_utils_setup import _ensure_emission, get_dimensions
 
 # ─────────────────────────────────────────────────────────────────────────────
-# VEHICLE LIGHTS  (brake + turn signals)
+# Colour definitions (RGB, 0–1 range)
 # ─────────────────────────────────────────────────────────────────────────────
+COLOR_MAP = {
+    'red':    (1.0, 0.0, 0.0),
+    'yellow': (1.0, 0.65, 0.0),   # amber
+}
 
-
-# ── find rear axis automatically --------------------------------------------
-def _rear_axis_vec(obj):
+def _mk_disc(parent, tag, offsets, light_dir):
     """
-    Return a *unit* vector in local space that points out the REAR of *obj*
-    (the bbox face furthest from the origin in world coordinates).
+    Make one lamp disc of colour `tag` on side `light_dir` ('left' or 'right').
+    Naming: parent_lightdir_tag so we can parse both.
     """
-    axes = [mathutils.Vector(v) for v in
-            [(1,0,0), (-1,0,0), (0,1,0), (0,-1,0)]]
-    max_d, rear = -1, None
-    for a in axes:
-        corner_world = obj.matrix_world @ (a * obj.dimensions / 2)
-        dist = (corner_world - obj.location).length
-        if dist > max_d:
-            max_d, rear = dist, a
-    return rear.normalized()
+    x_off, y_off, z_off, flip = offsets
+    flip = -1 if flip else 1
+    x_len, y_len, z_len = get_dimensions(parent)
 
-# ── lamp creation ------------------------------------------------------------
-def _mk_lamp(parent, tag, size, rear_offset_m, sideways_frac, height_frac,
-             colour, strength=0.02):
+    # center on parent
+    z_off = z_off + z_len/2
+    y_off = (y_off - (y_len/2 - .05)) * flip
+    if light_dir == 'left':
+        x_off = -(x_off + (x_len/2 - .5)) * flip
+    else:
+        x_off = (x_off + (x_len/2 - .5)) * flip
+
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.1, depth=0.05)
+    disc = bpy.context.object
+    disc.name = f"{parent.name}_{light_dir}_{tag}"
+    disc.parent = parent
+    disc.location = (x_off, y_off, z_off)
+    disc.rotation_euler = (math.radians(90), 0, math.radians(180))
+
+    mat = bpy.data.materials.new(f"{disc.name}_MAT")
+    disc.data.materials.append(mat)
+    # start “off” with a low tint so you see the lens
+    _ensure_emission(mat, COLOR_MAP[tag], strength=0.05)
+    return disc
+
+def set_brake_light(vehicle, brake_on, offsets=None):
     """
-    Generic creator for strip (brake) or cylinder (indicator) lamps.
-    • size            : (x,y,z) cube half‑extents OR cylinder radius/depth.
-    • rear_offset_m   : distance *behind* bumper plane.
-    • sideways_frac   : ±fraction of bbox half‑width (0 = centre, 1 = outermost).
-    • height_frac     : fraction of bbox height (0 = bottom, 1 = roof).
+    Ensures two red discs exist (left & right), then sets them on or off.
     """
-    rear_vec = _rear_axis_vec(parent)
-    right_vec = mathutils.Vector((rear_vec.y, -rear_vec.x, 0)).normalized()
-    up_vec    = mathutils.Vector((0,0,1))
+    tag = 'red'
+    offsets = offsets or [0,0,0,False]
+    offsets = (offsets[0] - .05, offsets[1], offsets[2] - 0.1, offsets[3]) # slightly lower for brake
 
-    # choose primitive
-    if tag == "brake":
-        bpy.ops.mesh.primitive_cube_add(size=1)
-        lamp = bpy.context.object
-        lamp.scale = (size[0]/2, size[1]/2, size[2]/2)
-    else:  # indicator
-        bpy.ops.mesh.primitive_cylinder_add(radius=size[0], depth=size[1])
-        lamp = bpy.context.object
-        lamp.rotation_euler = (math.radians(90), 0, 0)
+    # 1) ensure we have exactly two red bulbs
+    existing = {c.name for c in vehicle.children}
+    for side in ('left','right'):
+        name = f"{vehicle.name}_{side}_{tag}"
+        if name not in existing:
+            _mk_disc(vehicle, tag, offsets, side)
 
-    lamp.name   = f"{parent.name}_{tag}"
-    lamp.parent = parent
+    # 2) switch them on/off
+    for child in vehicle.children:
+        parts = child.name.split('_')
+        if parts[-1] == tag:
+            mat = child.data.materials[0]
+            strength = 25.0 if brake_on else 0.1
+            _ensure_emission(mat, COLOR_MAP[tag], strength)
 
-    half_w = parent.dimensions.x/2
-    lamp.location = (
-        rear_vec * -(rear_offset_m) +                    # behind bumper
-        right_vec * (sideways_frac * half_w) +           # left / right
-        up_vec    * (height_frac  * parent.dimensions.z) # vertical
-    )
-    mat = bpy.data.materials.new(f"{lamp.name}_MAT")
-    lamp.data.materials.append(mat)
-    _ensure_emission(mat, colour, strength)
-    return lamp
-
-# ── idempotent attachment ----------------------------------------------------
-def _attach_vehicle_lights(vehicle):
-    tags = {c.name.split('_')[-1] for c in vehicle.children}
-    if {"brake", "ts_left", "ts_right"} <= tags:
-        return                                   # already exists
-
-    # sizes
-    strip = (vehicle.dimensions.x*0.8, 0.03, 0.08)   # w, d, h
-    ind_r, ind_d = 0.10, 0.04                       # radius, depth
-
-    # create three lamps
-    _mk_lamp(vehicle, "brake", strip,
-             rear_offset_m=0.04,
-             sideways_frac=0.0,   # centred
-             height_frac =0.18,
-             colour=(1,0,0))
-
-    _mk_lamp(vehicle, "ts_left",(ind_r, ind_d,0),
-             rear_offset_m=0.04,
-             sideways_frac=-0.35,
-             height_frac =0.16,
-             colour=(1,0.5,0))
-
-    _mk_lamp(vehicle, "ts_right",(ind_r, ind_d,0),
-             rear_offset_m=0.04,
-             sideways_frac= 0.35,
-             height_frac =0.16,
-             colour=(1,0.5,0))
-
-# ── public controls ----------------------------------------------------------
-def set_brake_light(vehicle, on, off_strength=0.02):
-    _attach_vehicle_lights(vehicle)
-    for ch in vehicle.children:
-        if ch.name.endswith("_brake"):
-            _ensure_emission(ch.data.materials[0], (1,0,0),
-                             25 if on else off_strength)
-
-def set_turn_signal(vehicle, direction, off_strength=0.02):
+def set_turn_signal(vehicle, direction, offsets=None):
     """
-    direction ∈ {'left','right','hazard', None}
+    Ensures two yellow discs exist (left & right), then flashes the one matching
+    `direction` ('left' or 'right').
     """
-    _attach_vehicle_lights(vehicle)
-    dir_low = None if direction is None else direction.lower()
-    for ch in vehicle.children:
-        if ch.name.endswith("_ts_left"):
-            on = dir_low in {"left","hazard"}
-            _ensure_emission(ch.data.materials[0], (1,0.5,0),
-                             20 if on else off_strength)
-        elif ch.name.endswith("_ts_right"):
-            on = dir_low in {"right","hazard"}
-            _ensure_emission(ch.data.materials[0], (1,0.5,0),
-                             20 if on else off_strength)
+    tag = 'yellow'
+    offsets = offsets or [0,0,0,False]
+    offsets = (offsets[0] + .05, offsets[1], offsets[2] + 0.1, offsets[3])  # slightly higher for signal
+
+    # 1) ensure we have exactly two yellow bulbs
+    existing = {c.name for c in vehicle.children}
+    for side in ('left','right'):
+        name = f"{vehicle.name}_{side}_{tag}"
+        if name not in existing:
+            _mk_disc(vehicle, tag, offsets, side)
+
+    # 2) only the matching side glows bright
+    for child in vehicle.children:
+        parts = child.name.split('_')
+        if parts[-1] == tag:
+            mat = child.data.materials[0]
+            on = (parts[-2] == direction) or (direction == 'hazard')
+            strength = 25.0 if on else 0.2
+            _ensure_emission(mat, COLOR_MAP[tag], strength)

@@ -1,6 +1,6 @@
 {
     "name": "Vehicle",
-    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
     "vehicle_type": "car",
     "left_taillight": {
         "name": "Taillight",
@@ -9,16 +9,16 @@
         "type": "brake_light",
         "object_data": {
             "bbox": [
-                763,
-                441,
-                773,
-                448
+                402,
+                491,
+                426,
+                500
             ],
             "center": [
-                768.0,
-                444.5
+                414.0,
+                495.5
             ],
-            "confidence": 0.38815292716026306,
+            "confidence": 0.45696571469306946,
             "pose": null
         }
     },
@@ -26,38 +26,38 @@
         "name": "Taillight",
         "image_path": null,
         "direction": "right",
-        "type": "taillight",
+        "type": "turn_signal",
         "object_data": {
             "bbox": [
-                865,
-                456,
-                877,
-                464
+                469,
+                490,
+                499,
+                500
             ],
             "center": [
-                871.0,
-                460.0
+                484.0,
+                495.0
             ],
-            "confidence": 0.33866947889328003,
+            "confidence": 0.364831805229187,
             "pose": null
         }
     },
     "object_data": {
         "bbox": [
-            763,
-            419,
-            870,
-            510
+            399,
+            450,
+            525,
+            540
         ],
         "center": [
-            816,
-            465
+            462,
+            495
         ],
-        "confidence": 0.5901029109954834,
+        "confidence": 0.6934414505958557,
         "pose": [
-            1.5840188916457778,
-            0.4950719827674717,
-            15.718147277832031,
+            -1.9788338025554073,
+            0.8188155618396696,
+            16.325016021728516,
             0,
             0,
             0

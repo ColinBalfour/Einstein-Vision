@@ -1,0 +1,27 @@
+{
+    "name": "TrafficLight",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
+    "color": "green",
+    "arrow_direction": "left",
+    "object_data": {
+        "bbox": [
+            277.6169128417969,
+            250.6439666748047,
+            304.5508117675781,
+            308.00628662109375
+        ],
+        "center": [
+            289,
+            282
+        ],
+        "confidence": 0.757073700428009,
+        "pose": [
+            -4.252061752480221,
+            -1.5240418046430146,
+            18.51120376586914,
+            0,
+            0,
+            0
+        ]
+    }
+}

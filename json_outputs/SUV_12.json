@@ -1,25 +1,25 @@
 {
     "name": "Vehicle",
     "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
-    "vehicle_type": "car",
+    "vehicle_type": "SUV",
     "left_taillight": null,
     "right_taillight": null,
     "object_data": {
         "bbox": [
-            243,
-            459,
-            317,
-            529
+            318,
+            454,
+            372,
+            485
         ],
         "center": [
-            280,
-            494
+            345,
+            469
         ],
-        "confidence": 0.31094732880592346,
+        "confidence": 0.37492647767066956,
         "pose": [
-            -4.264579888457762,
-            0.897599530805458,
-            18.12047576904297,
+            -8.618398014716519,
+            1.5052315537508896,
+            44.29121780395508,
             0,
             0,
             0
