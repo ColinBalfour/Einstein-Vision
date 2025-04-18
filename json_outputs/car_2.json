@@ -1,25 +1,63 @@
 {
     "name": "Vehicle",
-    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
     "vehicle_type": "car",
-    "left_taillight": null,
-    "right_taillight": null,
+    "left_taillight": {
+        "name": "Taillight",
+        "image_path": null,
+        "direction": "left",
+        "type": "taillight",
+        "object_data": {
+            "bbox": [
+                512,
+                471,
+                512,
+                477
+            ],
+            "center": [
+                512.0,
+                474.0
+            ],
+            "confidence": 0.31722235679626465,
+            "pose": null
+        }
+    },
+    "right_taillight": {
+        "name": "Taillight",
+        "image_path": null,
+        "direction": "right",
+        "type": "brake_light",
+        "object_data": {
+            "bbox": [
+                581,
+                486,
+                589,
+                494
+            ],
+            "center": [
+                585.0,
+                490.0
+            ],
+            "confidence": 0.36125612258911133,
+            "pose": null
+        }
+    },
     "object_data": {
         "bbox": [
-            355,
-            432,
-            414,
-            476
+            522,
+            448,
+            580,
+            504
         ],
         "center": [
-            385,
-            454
+            551,
+            476
         ],
-        "confidence": 0.49119582772254944,
+        "confidence": 0.49138975143432617,
         "pose": [
-            -4.231366743620117,
-            0.6154726641130404,
-            24.963661193847656,
+            -1.6395054216631715,
+            0.9610638584008149,
+            25.06756591796875,
             0,
             0,
             0

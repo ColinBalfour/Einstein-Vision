@@ -1,24 +1,24 @@
 {
     "name": "Vehicle",
-    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
     "vehicle_type": "SUV",
     "left_taillight": {
         "name": "Taillight",
         "image_path": null,
         "direction": "left",
-        "type": "brake_light",
+        "type": "taillight",
         "object_data": {
             "bbox": [
-                843,
-                459,
-                858,
-                468
+                369,
+                469,
+                381,
+                479
             ],
             "center": [
-                850.5,
-                463.5
+                375.0,
+                474.0
             ],
-            "confidence": 0.30912116169929504,
+            "confidence": 0.3364105224609375,
             "pose": null
         }
     },
@@ -26,38 +26,38 @@
         "name": "Taillight",
         "image_path": null,
         "direction": "right",
-        "type": "turn_signal",
+        "type": "brake_light",
         "object_data": {
             "bbox": [
-                1083,
-                457,
-                1095,
-                479
+                403,
+                492,
+                426,
+                500
             ],
             "center": [
-                1089.0,
-                468.0
+                414.5,
+                496.0
             ],
-            "confidence": 0.4107746481895447,
+            "confidence": 0.36819878220558167,
             "pose": null
         }
     },
     "object_data": {
         "bbox": [
-            848,
-            389,
-            1099,
-            576
+            369,
+            454,
+            423,
+            513
         ],
         "center": [
-            974,
+            396,
             483
         ],
-        "confidence": 0.6806907057762146,
+        "confidence": 0.5247446894645691,
         "pose": [
-            1.7857361225429822,
-            0.3814643753778556,
-            8.935056686401367,
+            -3.83508066211773,
+            1.0069376557182137,
+            23.58554458618164,
             0,
             0,
             0

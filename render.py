@@ -5,6 +5,7 @@ import sys
 import math
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
+# script_dir = os.path.expanduser("~/Documents/RBE549/Einstein-Vision")
 sys.path.append(script_dir)
 from traffic_light_render import highlight_light_color, add_direction_arrow
 from brake_light_render import set_brake_light, set_turn_signal
@@ -97,6 +98,26 @@ object_offsets = {
     'TrafficLight': (0, 0, -0),
     'Pedestrian': (0, 0, 0),
     'RoadSign': (0, 0, -0),
+}
+
+vehicle_offsets = {
+    "taillight_flip" : {
+        "car": True,
+        "truck": False,
+        "SUV": False,
+        "bicycle": False,
+        "pickup": False,
+        "motorcycle": False,
+    },
+    
+    "taillight_offsets": {
+        "car": (0, -.05, 0),
+        "truck": (0, 0, 0),
+        "SUV": (0, .1, .1),
+        "bicycle": (0, 0, 0),
+        "pickup": (0, 0, 0),
+        "motorcycle": (0, 0, 0),
+    }
 }
 
 # ------------------------------------------------------------------------------
@@ -266,6 +287,7 @@ def import_objects_from_json():
             
             # ─── vehicle light controls ────────────────────────────────────────────────
             if asset_name in categories["Vehicle"]:
+
                 left_taillight = data.get("left_taillight", {})
                 right_taillight = data.get("right_taillight", {})
                 
@@ -286,14 +308,19 @@ def import_objects_from_json():
                     
                 l_dir = 'right' if right_turn else l_dir
                 
+                flip = vehicle_offsets["taillight_flip"].get(asset_name, False)
+                offsets = vehicle_offsets["taillight_offsets"].get(asset_name, (0, 0, 0))
+                offsets = (offsets[0], offsets[1], offsets[2], flip)
                 
                 set_brake_light(
                     appended_obj,
-                    braking
+                    braking,
+                    offsets=offsets,
                 )
                 set_turn_signal(
                     appended_obj,
-                    l_dir     # left, right, hazard, or None
+                    l_dir,     # left, right, hazard, or None
+                    offsets=offsets,
                 )
             # ───────────────────────────────────────────────────────────────────────────
             

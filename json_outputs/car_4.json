@@ -1,25 +1,25 @@
 {
     "name": "Vehicle",
-    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
     "vehicle_type": "car",
     "left_taillight": null,
     "right_taillight": null,
     "object_data": {
         "bbox": [
-            437,
-            433,
-            472,
-            464
+            701,
+            450,
+            718,
+            460
         ],
         "center": [
-            455,
-            448
+            710,
+            455
         ],
-        "confidence": 0.4031946063041687,
+        "confidence": 0.34049081802368164,
         "pose": [
-            -3.3862370604335705,
-            0.5640658185243062,
-            26.95952606201172,
+            2.437629724760084,
+            1.7961316348742,
+            71.05863952636719,
             0,
             0,
             0

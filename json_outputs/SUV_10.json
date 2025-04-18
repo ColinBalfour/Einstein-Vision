@@ -1,7 +1,7 @@
 {
     "name": "Vehicle",
-    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
-    "vehicle_type": "car",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
+    "vehicle_type": "SUV",
     "left_taillight": {
         "name": "Taillight",
         "image_path": null,
@@ -9,16 +9,16 @@
         "type": "brake_light",
         "object_data": {
             "bbox": [
-                764,
-                441,
-                773,
-                448
+                580,
+                469,
+                599,
+                496
             ],
             "center": [
-                768.5,
-                444.5
+                589.5,
+                482.5
             ],
-            "confidence": 0.3565596640110016,
+            "confidence": 0.7244905829429626,
             "pose": null
         }
     },
@@ -26,38 +26,38 @@
         "name": "Taillight",
         "image_path": null,
         "direction": "right",
-        "type": "taillight",
+        "type": "brake_light",
         "object_data": {
             "bbox": [
-                865,
-                456,
-                877,
-                465
+                696,
+                473,
+                709,
+                488
             ],
             "center": [
-                871.0,
-                460.5
+                702.5,
+                480.5
             ],
-            "confidence": 0.3208116888999939,
+            "confidence": 0.31742575764656067,
             "pose": null
         }
     },
     "object_data": {
         "bbox": [
-            763,
-            420,
-            870,
-            509
+            571,
+            433,
+            721,
+            566
         ],
         "center": [
-            816,
-            464
+            646,
+            499
         ],
-        "confidence": 0.3858751356601715,
+        "confidence": 0.6093043088912964,
         "pose": [
-            1.5854564736205456,
-            0.48573558747607704,
-            15.732412338256836,
+            -0.07294722304195446,
+            0.6587694171430848,
+            12.513394355773926,
             0,
             0,
             0

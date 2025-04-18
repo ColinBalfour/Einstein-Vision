@@ -1,25 +1,44 @@
 {
     "name": "Vehicle",
-    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_4/frame_000045.png",
     "vehicle_type": "car",
-    "left_taillight": null,
+    "left_taillight": {
+        "name": "Taillight",
+        "image_path": null,
+        "direction": "left",
+        "type": "turn_signal",
+        "object_data": {
+            "bbox": [
+                72,
+                535,
+                179,
+                563
+            ],
+            "center": [
+                125.5,
+                549.0
+            ],
+            "confidence": 0.49955421686172485,
+            "pose": null
+        }
+    },
     "right_taillight": null,
     "object_data": {
         "bbox": [
-            725,
-            431,
-            781,
-            485
+            0,
+            440,
+            322,
+            696
         ],
         "center": [
-            753,
-            458
+            161,
+            568
         ],
-        "confidence": 0.5585281848907471,
+        "confidence": 0.6590061187744141,
         "pose": [
-            1.3547340973248727,
-            0.6001556426373382,
-            22.111061096191406,
+            -1.7948151963468932,
+            0.5533413695051027,
+            5.790285110473633,
             0,
             0,
             0
