@@ -82,7 +82,8 @@ class RAFTModel:
                 np.save(os.path.join(save_path, f"{scene_img}_flow.npy"), flow)
                 np.save(os.path.join(save_path, f"{scene_img}_sampson.npy"), sampson)
             
-        return flow_low, flow_up, flow_im
+        return flow_low, flow, flow_im
+    
     
     def compute_sampson_distance(self, flow):
         h, w = flow.shape[:2]
@@ -110,6 +111,22 @@ class RAFTModel:
         sampson_distance = 1.0 - dot
 
         return sampson_distance
+    
+    @staticmethod
+    def load_flow_from_path(path, output_dir = "outputs/optical_flow"):
+        
+        scene_img = path.split('/')[-2:]
+        scene_img = "/".join(scene_img).split(".")[0]
+        
+        im_path = os.path.join(output_dir, f"{scene_img}_flow.npy")
+        flow_image = np.load(im_path)
+        im_path = os.path.join(output_dir, f"{scene_img}_sampson.npy")
+        sampson_image = np.load(im_path)
+        
+        return flow_image, sampson_image
+        
+        
+        
             
     def viz(self, img, flo, show=False):
         img = img[0].permute(1,2,0).cpu().numpy()

@@ -70,6 +70,7 @@ class ObjectDetectionModel:
         'turn': (255, 255, 0),  # yellow
         'taillight': (255, 255, 255),  # white
         
+        'moving': (255, 255, 255),  # white
         'green': (0, 255, 0),  # green
         'yellow': (0, 255, 255),  # yellow
         'red': (0, 0, 255),  # red
@@ -201,6 +202,9 @@ class ObjectDetectionModel:
                 if class_name == 'traffic light' and obj.color:
                     print(f"Traffic light color detected: {obj.color}")
                     class_name = obj.color
+                    
+                if obj.__class__.__name__ == 'Vehicle' and obj.moving:
+                    class_name = 'moving'
                 
                 self.draw_viz(img, obj, class_name)
         

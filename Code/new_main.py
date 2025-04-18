@@ -11,6 +11,7 @@ from ImageModels.MetricDepth import *
 from ImageModels.ObjectDetection import *  # Import ObjectDetection for object detection
 from ImageModels.PoseEstimationModel import *
 from ImageModels.ClassicalModels import *
+from ImageModels.OpticalFlow import RAFTModel
 
 
 def main():
@@ -51,6 +52,7 @@ def main():
     # Convert the image from BGR to RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
+    # Get Depth Image
     camera_mtx = np.load("P3Data/Calib/calib_mat_front.npy")
     
     load_model = False
@@ -60,6 +62,18 @@ def main():
     else:
         depth = MetricDepthModel.get_depth_image_from_path(image_path)
         
+    
+    # Get Optical Flow
+    load_model = False
+    optical_flow_model = RAFTModel()
+    if load_model:
+        _, flow, flow_im = optical_flow_model.infer(image_path=image_path, save_path="outputs/optical_flow")
+        sampson = optical_flow_model.compute_sampson_distance(flow)
+    else:
+        # Load the precomputed optical flow
+        flow, sampson = RAFTModel.load_flow_from_path(image_path) 
+    
+    
     
     lane_model = LaneSegmentationModel(checkpoint_path="Code/ImageModels/lane_segmentation.pth")
     
@@ -112,6 +126,33 @@ def main():
     # Detect taillights on vehicles
     for name, detected_objects in vehicle_results.items():
         for i, obj in enumerate(detected_objects):
+            
+            # Get an array of detected vehicle coorindinates (bbox or mask, if available)
+            pixel_coords = []
+            if obj.mask is not None:
+                # Get the bounding box from the mask
+                mask = obj.mask.astype(np.uint8)
+                for y in range(mask.shape[0]):
+                    for x in range(mask.shape[1]):
+                        if mask[y, x] > 0:
+                            pixel_coords.append((x, y))
+            elif obj.bbox is not None:
+                # Use the bounding box directly
+                for y in range(obj.bbox[1], obj.bbox[3]):
+                    for x in range(obj.bbox[0], obj.bbox[2]):
+                        pixel_coords.append((x, y))
+
+            pixel_coords = np.array(pixel_coords)
+            
+            rows = pixel_coords[:, 1]
+            cols = pixel_coords[:, 0]
+            
+            mean_sampson = np.mean(sampson[rows, cols])
+            obj.moving = mean_sampson > 0.1
+                
+            
+                
+            
             x1, y1, x2, y2 = obj.bbox
             
             padding = 10

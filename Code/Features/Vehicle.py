@@ -21,7 +21,7 @@ class Vehicle(Object):
         "motorcycle",
     ]
     
-    def __init__(self, bbox, center, confidence, mask=None, pose=None, vehicle_type='car', left_taillight=None, right_taillight=None):
+    def __init__(self, bbox, center, confidence, mask=None, pose=None, vehicle_type='car', left_taillight=None, right_taillight=None, moving=False):
         super().__init__(bbox, center, confidence, mask, pose) # Call the parent constructor to initialize bbox, center, mask, confidence, and pose
         
         if vehicle_type not in Vehicle.VEHICLE_TYPES:
@@ -30,6 +30,7 @@ class Vehicle(Object):
         self.vehicle_type = vehicle_type
         self.left_taillight = left_taillight  # Optional: left taillight object
         self.right_taillight = right_taillight  # Optional: right taillight object
+        self.moving = moving  # Optional: flag to indicate if the vehicle is moving
         
     def __repr__(self):
         # Custom string representation of the Vehicle object
@@ -52,6 +53,7 @@ class Vehicle(Object):
             'vehicle_type': self.vehicle_type,  # Include the vehicle type
             'left_taillight': self.left_taillight.to_json() if self.left_taillight else None,
             'right_taillight': self.right_taillight.to_json() if self.right_taillight else None,
+            'moving': self.moving,  # Include the moving status
             'object_data': super().to_json()
         }
 
