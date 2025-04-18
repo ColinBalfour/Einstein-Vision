@@ -17,6 +17,8 @@ class Vehicle(Object):
         "SUV",
         "truck",
         "bicycle",
+        "pickup",
+        "motorcycle",
     ]
     
     def __init__(self, bbox, center, confidence, mask=None, pose=None, vehicle_type='car', left_taillight=None, right_taillight=None):
@@ -48,6 +50,8 @@ class Vehicle(Object):
             'name': 'Vehicle',  # Name of the object type
             'image_path': image_path,  # Optional: path to the image if needed for reference
             'vehicle_type': self.vehicle_type,  # Include the vehicle type
+            'left_taillight': self.left_taillight.to_json() if self.left_taillight else None,
+            'right_taillight': self.right_taillight.to_json() if self.right_taillight else None,
             'object_data': super().to_json()
         }
 

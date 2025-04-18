@@ -26,7 +26,7 @@ def main():
         "motorcycle": "P3Data/ExtractedFrames/Undist/scene_13/frame_000244.png",
     }
     
-    image_path = key_images["traffic_light"]
+    image_path = key_images["traffic_cones_brake_light"]
     show = False
     
     
@@ -101,9 +101,10 @@ def main():
     )
     tailight_model = DeticDectector(
         vocabulary={
-            'taillight': ['taillight_off', 'car_taillight_off', 'car_rear_light_off', 'rear_light_off', 'brake_light_off', 'turn_signal_off'],
-            'brake_light': ['brake_light_on', 'car_brake_light_on', 'car_stopping_light_on', 'rear_light_on', 'red_light_on', 'braking_light'],
-            'turn_signal': ['turn_signal_on'],
+            # 'taillight': ['taillight_off', 'car_taillight_off', 'car_rear_light_off', 'rear_light_off', 'brake_light_off', 'turn_signal_off'],
+            # 'brake_light': ['brake_light_on', 'car_brake_light_on', 'car_stopping_light_on', 'rear_light_on', 'red_light_on', 'braking_light'],
+            # 'turn_signal': ['turn_signal_on'],
+            'taillight': ['taillight', 'car_taillight', 'car_rear_light', 'rear_light', 'brake_light', 'turn_signal', 'car_light'],
         }
     )
     vehicle_results = vehicle_model.get_outputs(img=image_path)
@@ -159,6 +160,9 @@ def main():
                 
                 leftmost.center = [(leftmost.bbox[0] + leftmost.bbox[2]) / 2, (leftmost.bbox[1] + leftmost.bbox[3]) / 2]
                 
+                light_type = detect_brake_and_indicator_lights(img.copy(), leftmost, 'rgb')
+                leftmost.light_type = light_type
+                
                 obj.left_taillight = leftmost
                 
             if rightmost:
@@ -175,6 +179,9 @@ def main():
                 print('new bbox:', rightmost.bbox)
                 
                 rightmost.center = [(rightmost.bbox[0] + rightmost.bbox[2]) / 2, (rightmost.bbox[1] + rightmost.bbox[3]) / 2]
+                
+                light_type = detect_brake_and_indicator_lights(img.copy(), rightmost, 'rgb')
+                rightmost.light_type = light_type
                 
                 obj.right_taillight = rightmost       
     

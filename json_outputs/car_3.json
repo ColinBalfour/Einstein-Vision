@@ -1,0 +1,28 @@
+{
+    "name": "Vehicle",
+    "image_path": "P3Data/ExtractedFrames/Undist/scene_6/frame_000177.png",
+    "vehicle_type": "car",
+    "left_taillight": null,
+    "right_taillight": null,
+    "object_data": {
+        "bbox": [
+            71,
+            440,
+            191,
+            509
+        ],
+        "center": [
+            131,
+            474
+        ],
+        "confidence": 0.4744977056980133,
+        "pose": [
+            -4.668679604421511,
+            0.5267436177682697,
+            14.199885368347168,
+            0,
+            0,
+            0
+        ]
+    }
+}
